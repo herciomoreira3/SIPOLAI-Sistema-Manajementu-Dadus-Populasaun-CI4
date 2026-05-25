@@ -13,48 +13,36 @@ $routes->get('/', function() {
 $routes->get('/force-reset-admin', function() {
     $db = \Config\Database::connect();
     
-    // Myth Auth uses a specific preparePassword function before hashing!
-    $hash = \Myth\Auth\Password::hash('sipolai2026admin');
+    echo "<h1>Fixing Database & Permissions...</h1>";
     
-    // Check if the user exists
-    $existing = $db->table('users')->where('email', 'admin@admin.com')->orWhere('id', 1)->get()->getRowArray();
+    // 1. Delete the admin user we just created to avoid Seeder conflicts
+    $db->table('users')->where('email', 'admin@admin.com')->delete();
+    $db->table('users')->where('email', 'user@user.com')->delete(); // Just in case
     
-    if (empty($existing)) {
-        // Insert admin user
-        $db->table('users')->insert([
-            'email'         => 'admin@admin.com',
-            'username'      => 'admin',
-            'password_hash' => $hash,
-            'active'        => 1,
-            'created_at'    => date('Y-m-d H:i:s'),
-            'updated_at'    => date('Y-m-d H:i:s'),
-            'deleted_at'    => null
-        ]);
-        
-        // Also insert the group permission if needed (assuming group 1 is superadmin)
-        $userId = $db->insertID();
-        $db->table('auth_groups_users')->ignore(true)->insert([
-            'group_id' => 1,
-            'user_id'  => $userId
-        ]);
-    } else {
-        // Force reset it
-        $db->table('users')->where('id', $existing['id'])->update([
-            'email'         => 'admin@admin.com',
-            'username'      => 'admin',
-            'password_hash' => $hash,
-            'active'        => 1,
-            'deleted_at'    => null
-        ]);
+    // 2. Clear tables that BoilerplateSeeder seeds so it doesn't crash on unique constraints
+    // (We use ignore/skip for groups if they exist, but menus don't have unique constraints so we should truncate menu to avoid duplicates)
+    $db->table('menu')->truncate();
+    $db->table('groups_menu')->truncate();
+    
+    // 3. Run the BoilerplateSeeder to seed all Roles, Permissions, and Menus!
+    try {
+        $seeder = \Config\Database::seeder();
+        $seeder->call('Boilerplate\Database\Seeds\BoilerplateSeeder');
+        echo "<p style='color:green;'>✅ BoilerplateSeeder ran successfully (Menus and Permissions restored).</p>";
+    } catch (\Throwable $e) {
+        echo "<p style='color:orange;'>⚠️ Seeder note: " . $e->getMessage() . "</p>";
     }
     
-    // Let's test the UserModel directly to see what query it runs
-    $userModel = model(\Myth\Auth\Models\UserModel::class);
-    $user = $userModel->where(['email' => 'admin@admin.com'])->first();
+    // 4. Update the admin password to sipolai2026admin
+    $hash = \Myth\Auth\Password::hash('sipolai2026admin');
+    $db->table('users')->where('email', 'admin@admin.com')->update([
+        'password_hash' => $hash,
+        'active'        => 1,
+        'deleted_at'    => null
+    ]);
+    echo "<p style='color:green;'>✅ Admin password updated to sipolai2026admin.</p>";
     
-    echo "<h1>Debug Auth Attempt</h1>";
-    
-    // Test the attempt
+    // 5. Test the attempt
     $auth = service('authentication');
     $credentials = ['email' => 'admin@admin.com', 'password' => 'sipolai2026admin'];
     
@@ -62,16 +50,10 @@ $routes->get('/force-reset-admin', function() {
         echo "<h2 style='color:green;'>AUTH SUCCESS!</h2>";
         echo "<p>Coba login sekarang menggunakan:</p>";
         echo "<ul><li>Email: <b>admin@admin.com</b></li><li>Password: <b>sipolai2026admin</b></li></ul>";
+        echo "<p><a href='" . site_url('admin') . "'>Klik di sini untuk masuk ke Dashboard</a></p>";
     } else {
         echo "<h2 style='color:red;'>AUTH FAILED!</h2>";
         echo "<p>Error: " . $auth->error() . "</p>";
-        
-        echo "<hr><h3>Let's dump ALL users in the DB:</h3><pre>";
-        $users = $db->table('users')->get()->getResultArray();
-        foreach ($users as $u) {
-            echo "ID: " . $u['id'] . " | Email: '" . $u['email'] . "' | Username: '" . $u['username'] . "' | Active: " . $u['active'] . " | Deleted: " . $u['deleted_at'] . "\n";
-        }
-        echo "</pre>";
         
         echo "<hr><h3>Querying exactly by email:</h3><pre>";
         $byEmail = $db->table('users')->where('email', 'admin@admin.com')->get()->getRowArray();
