@@ -9,6 +9,33 @@ $routes->get('/', function() {
     return redirect()->to('/admin');
 });
 
+// TEMPORARY DEBUG ROUTE
+$routes->get('/force-reset-admin', function() {
+    $db = \Config\Database::connect();
+    $hash = password_hash('sipolai2026admin', PASSWORD_BCRYPT, ['cost' => 10]);
+    
+    // First, let's see if admin exists by ID 1
+    $admin = $db->table('users')->where('id', 1)->get()->getRow();
+    
+    // Force reset it
+    $db->table('users')->where('id', 1)->update([
+        'email'         => 'admin@admin.com',
+        'username'      => 'admin',
+        'password_hash' => $hash,
+        'active'        => 1
+    ]);
+    
+    $updated = $db->table('users')->where('id', 1)->get()->getRow();
+    
+    echo "<h1>Admin Password Reset!</h1>";
+    echo "<p>Coba login sekarang menggunakan:</p>";
+    echo "<ul><li>Email: <b>admin@admin.com</b></li><li>Password: <b>sipolai2026admin</b></li></ul>";
+    echo "<hr><h3>Debug Info:</h3><pre>";
+    print_r($updated);
+    echo "</pre>";
+    exit;
+});
+
 $routes->group('admin', ['filter' => 'login'], function($routes) {
     // --- ADMIN ONLY ROUTES ---
     $routes->group('', ['filter' => 'role:admin'], function($routes) {
