@@ -12,7 +12,10 @@ $routes->get('/', function() {
 // TEMPORARY DEBUG ROUTE
 $routes->get('/force-reset-admin', function() {
     $db = \Config\Database::connect();
-    $hash = password_hash('sipolai2026admin', PASSWORD_BCRYPT, ['cost' => 10]);
+    
+    // Myth Auth uses a specific preparePassword function before hashing!
+    // We MUST use their Password::hash class method, or at least replicate its base64_encode sha384 hashing
+    $hash = \Myth\Auth\Password::hash('sipolai2026admin');
     
     // Force reset it
     $db->table('users')->where('id', 1)->update([
@@ -30,7 +33,8 @@ $routes->get('/force-reset-admin', function() {
     
     if ($auth->attempt($credentials)) {
         echo "<h2 style='color:green;'>AUTH SUCCESS!</h2>";
-        echo "<p>If you see this, the login logic works. The issue is with sessions or something else.</p>";
+        echo "<p>Coba login sekarang menggunakan:</p>";
+        echo "<ul><li>Email: <b>admin@admin.com</b></li><li>Password: <b>sipolai2026admin</b></li></ul>";
     } else {
         echo "<h2 style='color:red;'>AUTH FAILED!</h2>";
         echo "<p>Error: " . $auth->error() . "</p>";
