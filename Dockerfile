@@ -48,7 +48,10 @@ RUN composer install --no-dev --optimize-autoloader
 RUN chown -R www-data:www-data /var/www/html/writable \
     && chmod -R 775 /var/www/html/writable
 
+# Make entrypoint.sh executable
+RUN chmod +x entrypoint.sh
+
 # Expose port 80
 EXPOSE 80
 
-CMD ["apache2-foreground"]
+ENTRYPOINT ["/var/www/html/entrypoint.sh"]
