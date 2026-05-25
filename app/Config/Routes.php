@@ -22,7 +22,8 @@ $routes->get('/force-reset-admin', function() {
         'email'         => 'admin@admin.com',
         'username'      => 'admin',
         'password_hash' => $hash,
-        'active'        => 1
+        'active'        => 1,
+        'deleted_at'    => null
     ]);
     
     echo "<h1>Debug Auth Attempt</h1>";
@@ -30,6 +31,16 @@ $routes->get('/force-reset-admin', function() {
     // Test the attempt
     $auth = service('authentication');
     $credentials = ['email' => 'admin@admin.com', 'password' => 'sipolai2026admin'];
+    
+    // Let's test the UserModel directly to see what query it runs
+    $userModel = model(\Myth\Auth\Models\UserModel::class);
+    $user = $userModel->where(['email' => 'admin@admin.com'])->first();
+    
+    if (!$user) {
+        echo "<h2 style='color:red;'>USER MODEL FAILED TO FIND USER!</h2>";
+        echo "<pre>Query: " . $userModel->getLastQuery() . "</pre>";
+        echo "<pre>Check DB directly: " . print_r($db->table('users')->where('email', 'admin@admin.com')->get()->getRow(), true) . "</pre>";
+    }
     
     if ($auth->attempt($credentials)) {
         echo "<h2 style='color:green;'>AUTH SUCCESS!</h2>";
