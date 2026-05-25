@@ -10,34 +10,42 @@ class ResetAdminCredentials extends Migration
 {
     public function up()
     {
-        $users = new UserModel();
+        $db = \Config\Database::connect();
         
-        // Find the admin user by original email
-        $admin = $users->where('email', 'admin@admin.com')->first();
-        if ($admin) {
-            $admin->username = 'admin';
-            // Set new secure password
-            $admin->password = 'sipolai2026admin';
-            $users->save($admin);
-        } else {
-            // If they deleted or changed email, try by username
-            $admin = $users->where('username', 'admin')->first();
-            if ($admin) {
-                $admin->password = 'sipolai2026admin';
-                $users->save($admin);
-            }
-        }
+        // Let's generate the password hash using Myth Auth's expected mechanism (default password_hash with PASSWORD_DEFAULT)
+        // Myth\Auth\Entities\User uses password_hash() under the hood when setting the password.
+        $password = 'sipolai2026admin';
+        $hash = password_hash($password, PASSWORD_DEFAULT);
+
+        // Update username and password directly via query builder
+        $db->table('users')
+            ->where('email', 'admin@admin.com')
+            ->update([
+                'username'      => 'admin',
+                'password_hash' => $hash,
+                'active'        => 1
+            ]);
+            
+        // Also ensure user with username 'admin' has this email and password
+        $db->table('users')
+            ->where('username', 'admin')
+            ->update([
+                'email'         => 'admin@admin.com',
+                'password_hash' => $hash,
+                'active'        => 1
+            ]);
     }
 
     public function down()
     {
-        $users = new UserModel();
+        $db = \Config\Database::connect();
+        $hash = password_hash('super-admin', PASSWORD_DEFAULT);
         
-        $admin = $users->where('email', 'admin@admin.com')->first();
-        if ($admin) {
-            $admin->username = 'admin';
-            $admin->password = 'super-admin';
-            $users->save($admin);
-        }
+        $db->table('users')
+            ->where('email', 'admin@admin.com')
+            ->update([
+                'username'      => 'admin',
+                'password_hash' => $hash
+            ]);
     }
 }
