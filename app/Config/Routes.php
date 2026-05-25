@@ -16,14 +16,37 @@ $routes->get('/force-reset-admin', function() {
     // Myth Auth uses a specific preparePassword function before hashing!
     $hash = \Myth\Auth\Password::hash('sipolai2026admin');
     
-    // Force reset it
-    $db->table('users')->where('id', 1)->update([
-        'email'         => 'admin@admin.com',
-        'username'      => 'admin',
-        'password_hash' => $hash,
-        'active'        => 1,
-        'deleted_at'    => null
-    ]);
+    // Check if the user exists
+    $existing = $db->table('users')->where('email', 'admin@admin.com')->orWhere('id', 1)->get()->getRowArray();
+    
+    if (empty($existing)) {
+        // Insert admin user
+        $db->table('users')->insert([
+            'email'         => 'admin@admin.com',
+            'username'      => 'admin',
+            'password_hash' => $hash,
+            'active'        => 1,
+            'created_at'    => date('Y-m-d H:i:s'),
+            'updated_at'    => date('Y-m-d H:i:s'),
+            'deleted_at'    => null
+        ]);
+        
+        // Also insert the group permission if needed (assuming group 1 is superadmin)
+        $userId = $db->insertID();
+        $db->table('auth_groups_users')->ignore(true)->insert([
+            'group_id' => 1,
+            'user_id'  => $userId
+        ]);
+    } else {
+        // Force reset it
+        $db->table('users')->where('id', $existing['id'])->update([
+            'email'         => 'admin@admin.com',
+            'username'      => 'admin',
+            'password_hash' => $hash,
+            'active'        => 1,
+            'deleted_at'    => null
+        ]);
+    }
     
     // Let's test the UserModel directly to see what query it runs
     $userModel = model(\Myth\Auth\Models\UserModel::class);
