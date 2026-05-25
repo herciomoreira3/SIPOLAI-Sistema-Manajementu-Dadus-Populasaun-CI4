@@ -12,10 +12,9 @@ class ResetAdminCredentials extends Migration
     {
         $db = \Config\Database::connect();
         
-        // Let's generate the password hash using Myth Auth's expected mechanism (default password_hash with PASSWORD_DEFAULT)
-        // Myth\Auth\Entities\User uses password_hash() under the hood when setting the password.
         $password = 'sipolai2026admin';
-        $hash = password_hash($password, PASSWORD_DEFAULT);
+        // Myth\Auth uses PASSWORD_BCRYPT with cost set to 10 by default
+        $hash = password_hash($password, PASSWORD_BCRYPT, ['cost' => 10]);
 
         // Update username and password directly via query builder
         $db->table('users')
@@ -39,7 +38,7 @@ class ResetAdminCredentials extends Migration
     public function down()
     {
         $db = \Config\Database::connect();
-        $hash = password_hash('super-admin', PASSWORD_DEFAULT);
+        $hash = password_hash('super-admin', PASSWORD_BCRYPT, ['cost' => 10]);
         
         $db->table('users')
             ->where('email', 'admin@admin.com')
