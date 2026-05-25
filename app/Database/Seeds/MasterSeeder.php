@@ -10,12 +10,12 @@ class MasterSeeder extends Seeder
     {
         $db = \Config\Database::connect();
 
-        // 1. Seed Aldeia
+        // 1. Seed Aldeia - Real aldeia names for Suku Laisorulai de Baixo (from total.docx)
         $db->table('tabela_aldeia')->insertBatch([
-            ['naran_aldeia' => 'Aldeia Uaisa', 'id_suku' => 1],
-            ['naran_aldeia' => 'Aldeia Bula', 'id_suku' => 1],
-            ['naran_aldeia' => 'Aldeia Quelicai Antigo', 'id_suku' => 1],
-            ['naran_aldeia' => 'Aldeia Afaca', 'id_suku' => 1],
+            ['naran_aldeia' => 'Dara-oma', 'id_suku' => 1],
+            ['naran_aldeia' => 'Legu',     'id_suku' => 1],
+            ['naran_aldeia' => 'Sau-casa', 'id_suku' => 1],
+            ['naran_aldeia' => 'Ulu-soru', 'id_suku' => 1],
         ]);
 
         // 2. Seed Profisaun

@@ -325,9 +325,7 @@ foreach ($membros as $m) {
 ?>
 
 <div id="printable-ficha">
-    <?php if (!empty($cop_temp)) : ?>
-        <?= $cop_temp ?>
-    <?php endif; ?>
+
 
     <div class="ficha-title">
         LIVRU REJISTU UMA KAIN ( FICHA FAMÍLIA )
@@ -431,20 +429,22 @@ foreach ($membros as $m) {
             ?>
             <!-- Member Records -->
             <?php foreach ($membros as $membru) : ?>
-                <tr>
-                    <td><?= $no++ ?></td>
-                    <td style="text-align: left; padding-left: 6px; font-weight: bold;"><?= esc($membru['naran_kompletu']) ?></td>
-                    <td><?= esc($membru['jeneru']) ?></td>
-                    <td><?= esc($membru['relasaun_familia']) ?></td>
-                    <td><?= esc($membru['fatin_moris']) ?></td>
-                    <td><?= date('d-m-Y', strtotime($membru['data_moris'])) ?></td>
-                    <td><?= esc($membru['status_kaza']) ?></td>
-                    <td><?= esc($membru['naran_profisaun']) ?: '-' ?></td>
-                    <td><?= esc($membru['naran_relijiaun']) ?: '-' ?></td>
-                    <td><?= esc($membru['naran_literatura']) ?: '-' ?></td>
-                    <td>-</td>
-                </tr>
-            <?php endforeach; ?>
+    <?php if ($membru['relasaun_familia'] == 'Xefe Familia') continue; ?>
+    <tr>
+        <td><?= $no++ ?></td>
+        <td style="text-align: left; padding-left: 6px; font-weight: bold;"><?= esc($membru['naran_kompletu']) ?></td>
+        <td><?= esc($membru['jeneru']) ?></td>
+        <td><?= esc($membru['relasaun_familia']) ?></td>
+        <td><?= esc($membru['fatin_moris']) ?></td>
+        <td><?= date('d-m-Y', strtotime($membru['data_moris'])) ?></td>
+        <td><?= esc($membru['status_kaza']) ?></td>
+        <td><?= esc($membru['naran_profisaun']) ?: '-' ?></td>
+        <td><?= esc($membru['naran_relijiaun']) ?: '-' ?></td>
+        <td><?= esc($membru['naran_literatura']) ?: '-' ?></td>
+        <td>-</td>
+    </tr>
+<?php endforeach; ?>
+
 
             <!-- Additional Blank Rows up to maxRows to match official layout -->
             <?php for ($i = count($membros) + 1; $i <= $maxRows; $i++) : ?>

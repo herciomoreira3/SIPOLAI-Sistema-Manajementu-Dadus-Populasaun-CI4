@@ -181,8 +181,8 @@
                 {
                     "data": function(row) {
                         return `<div class="d-flex justify-content-center">
-                                    <a href="${baseUrl}/${row.id_familia}" class="btn btn-sm btn-warning btn-rounded text-white mr-2 shadow-sm" title="Rejistu Xefe Familia">
-                                        <i class="fas fa-user-plus mr-1"></i> Rejistu Xefe Familia
+                                    <a href="${baseUrl}/${row.id_familia}" class="btn btn-sm btn-warning rounded-circle text-white mr-2 shadow-sm" title="Rejistu Xefe Familia">
+                                        <i class="fas fa-user-plus"></i>
                                     </a>
                                     <a href="${baseUrl}/${row.id_familia}/edit" class="btn btn-sm btn-info rounded-circle mr-2 shadow-sm" title="Edit">
                                         <i class="fas fa-edit"></i>

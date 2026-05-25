@@ -39,6 +39,7 @@ $routes->group('admin', ['filter' => 'login'], function($routes) {
     // --- ADMIN & SEKRETARIA ONLY ROUTES ---
     $routes->group('', ['filter' => 'role:admin,sekretaria'], function($routes) {
         $routes->get('inventoriu', '\App\Controllers\Admin\InventoriuController::index', ['as' => 'inventoriu']);
+        $routes->delete('inventoriu/(:num)', '\App\Controllers\Admin\InventoriuController::delete/$1');
     });
 
     // --- GENERAL ACCESSIBLE ROUTES ---
