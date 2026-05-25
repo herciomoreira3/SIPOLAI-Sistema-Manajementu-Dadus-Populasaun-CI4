@@ -194,6 +194,35 @@ class Database extends Config
     {
         parent::__construct();
 
+        // Load database settings from environment variables if present
+        $envMap = [
+            'hostname' => ['database.default.hostname', 'DB_HOST'],
+            'username' => ['database.default.username', 'DB_USER'],
+            'password' => ['database.default.password', 'DB_PASS'],
+            'database' => ['database.default.database', 'DB_NAME'],
+            'port'     => ['database.default.port', 'DB_PORT'],
+        ];
+
+        foreach ($envMap as $dbKey => $envKeys) {
+            foreach ($envKeys as $envKey) {
+                $val = getenv($envKey) ?: ($_ENV[$envKey] ?? null);
+                if ($val !== null && $val !== '') {
+                    if ($dbKey === 'port') {
+                        $this->default[$dbKey] = (int)$val;
+                    } else {
+                        $this->default[$dbKey] = $val;
+                    }
+                    break;
+                }
+            }
+        }
+
+        // Set encrypt option if enabled (e.g. for SSL connection to TiDB Cloud)
+        $encrypt = getenv('database.default.encrypt') ?: ($_ENV['database.default.encrypt'] ?? null);
+        if ($encrypt === 'true' || $encrypt === '1' || $encrypt === true) {
+            $this->default['encrypt'] = ['ssl_verify' => false];
+        }
+
         // Ensure that we always set the database group to 'tests' if
         // we are currently running an automated test suite, so that
         // we don't overwrite live data on accident.
