@@ -1,0 +1,34 @@
+{
+    "name": "flightsadmin/boilerplate",
+    "description": "CodeIgniter4 Boilerplate based on AdminLTE 3 with user management, roles, permissions, ...",
+    "keywords": [ "codeigniter4", "authentication", "authorization", "boilerplate" ],
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "George Chitechi",
+            "email": "george@flightsadmin.com"
+        }
+    ],
+    "require": {
+        "php": "^7.3 || ^8.0",
+        "myth/auth": "dev-develop",
+        "codeigniter4/framework": "^4",
+        "codeigniter4/translations" : "^4"
+    },
+    "require-dev": {
+        "fakerphp/faker": "^1.13"
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true,
+    "autoload": {
+        "psr-4": {
+            "Boilerplate\\": "src"
+        }
+    },
+    "scripts": {
+        "post-update-cmd": [
+          "@composer dump-autoload"
+        ]
+    }
+}
