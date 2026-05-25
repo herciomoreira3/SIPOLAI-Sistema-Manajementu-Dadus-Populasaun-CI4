@@ -14,7 +14,6 @@ class AddIdAldeiaToEstrutura extends Migration
                 'constraint' => 11,
                 'unsigned'   => true,
                 'null'       => true,
-                'after'      => 'id_populasaun'
             ]
         ];
         $this->forge->addColumn('tabela_estrutura_suku', $fields);

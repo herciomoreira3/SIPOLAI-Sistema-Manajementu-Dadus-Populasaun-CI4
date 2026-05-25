@@ -13,7 +13,6 @@ class AddFotoToFamilia extends Migration
                 'type'       => 'VARCHAR',
                 'constraint' => '255',
                 'null'       => true,
-                'after'      => 'id_aldeia',
             ]
         ]);
     }

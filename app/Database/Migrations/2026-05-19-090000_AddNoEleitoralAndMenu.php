@@ -14,7 +14,6 @@ class AddNoEleitoralAndMenu extends Migration
                 'type'       => 'VARCHAR',
                 'constraint' => '50',
                 'null'       => true,
-                'after'      => 'nik', // put it right after NIK
             ]
         ]);
 

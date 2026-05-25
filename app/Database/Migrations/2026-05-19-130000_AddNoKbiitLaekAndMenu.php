@@ -14,7 +14,6 @@ class AddNoKbiitLaekAndMenu extends Migration
                 'type'       => 'VARCHAR',
                 'constraint' => '50',
                 'null'       => true,
-                'after'      => 'no_eleitoral', // put it right after no_eleitoral
             ]
         ]);
 

@@ -12,7 +12,6 @@ class AddMetaDataToPedidu extends Migration
             'meta_data' => [
                 'type' => 'TEXT',
                 'null' => true,
-                'after' => 'id_aldeia'
             ]
         ];
         $this->forge->addColumn('tabela_pedidu', $fields);

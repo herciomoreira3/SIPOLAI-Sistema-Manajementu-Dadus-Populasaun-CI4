@@ -13,7 +13,6 @@ class AddFatinMorisToPopulasaun extends Migration
                 'type'       => 'VARCHAR',
                 'constraint' => '100',
                 'null'       => true,
-                'after'      => 'naran_kompletu',
             ]
         ]);
     }

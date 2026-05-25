@@ -163,7 +163,6 @@ class CreatePopulasaunTables extends Migration
                 'constraint' => 11,
                 'unsigned'   => true,
                 'null'       => true,
-                'after'      => 'id',
             ]
         ]);
     }
