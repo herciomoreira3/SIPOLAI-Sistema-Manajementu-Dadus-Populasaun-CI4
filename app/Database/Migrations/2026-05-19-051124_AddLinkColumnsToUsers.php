@@ -8,21 +8,23 @@ class AddLinkColumnsToUsers extends Migration
 {
     public function up()
     {
-        $fields = [
+        $field1 = [
             'id_populasaun' => [
                 'type'       => 'INT',
                 'constraint' => 11,
                 'null'       => true,
-                'after'      => 'id_aldeia',
-            ],
+            ]
+        ];
+        $this->forge->addColumn('users', $field1);
+
+        $field2 = [
             'id_estrutura' => [
                 'type'       => 'INT',
                 'constraint' => 11,
                 'null'       => true,
-                'after'      => 'id_populasaun',
-            ],
+            ]
         ];
-        $this->forge->addColumn('users', $fields);
+        $this->forge->addColumn('users', $field2);
     }
 
     public function down()
