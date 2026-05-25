@@ -14,7 +14,6 @@ $routes->get('/force-reset-admin', function() {
     $db = \Config\Database::connect();
     
     // Myth Auth uses a specific preparePassword function before hashing!
-    // We MUST use their Password::hash class method, or at least replicate its base64_encode sha384 hashing
     $hash = \Myth\Auth\Password::hash('sipolai2026admin');
     
     // Force reset it
@@ -26,21 +25,15 @@ $routes->get('/force-reset-admin', function() {
         'deleted_at'    => null
     ]);
     
+    // Let's test the UserModel directly to see what query it runs
+    $userModel = model(\Myth\Auth\Models\UserModel::class);
+    $user = $userModel->where(['email' => 'admin@admin.com'])->first();
+    
     echo "<h1>Debug Auth Attempt</h1>";
     
     // Test the attempt
     $auth = service('authentication');
     $credentials = ['email' => 'admin@admin.com', 'password' => 'sipolai2026admin'];
-    
-    // Let's test the UserModel directly to see what query it runs
-    $userModel = model(\Myth\Auth\Models\UserModel::class);
-    $user = $userModel->where(['email' => 'admin@admin.com'])->first();
-    
-    if (!$user) {
-        echo "<h2 style='color:red;'>USER MODEL FAILED TO FIND USER!</h2>";
-        echo "<pre>Query: " . $userModel->getLastQuery() . "</pre>";
-        echo "<pre>Check DB directly: " . print_r($db->table('users')->where('email', 'admin@admin.com')->get()->getRow(), true) . "</pre>";
-    }
     
     if ($auth->attempt($credentials)) {
         echo "<h2 style='color:green;'>AUTH SUCCESS!</h2>";
@@ -49,6 +42,23 @@ $routes->get('/force-reset-admin', function() {
     } else {
         echo "<h2 style='color:red;'>AUTH FAILED!</h2>";
         echo "<p>Error: " . $auth->error() . "</p>";
+        
+        echo "<hr><h3>Let's dump ALL users in the DB:</h3><pre>";
+        $users = $db->table('users')->get()->getResultArray();
+        foreach ($users as $u) {
+            echo "ID: " . $u['id'] . " | Email: '" . $u['email'] . "' | Username: '" . $u['username'] . "' | Active: " . $u['active'] . " | Deleted: " . $u['deleted_at'] . "\n";
+        }
+        echo "</pre>";
+        
+        echo "<hr><h3>Querying exactly by email:</h3><pre>";
+        $byEmail = $db->table('users')->where('email', 'admin@admin.com')->get()->getRowArray();
+        print_r($byEmail);
+        echo "</pre>";
+        
+        echo "<hr><h3>Querying exactly by username:</h3><pre>";
+        $byUser = $db->table('users')->where('username', 'admin')->get()->getRowArray();
+        print_r($byUser);
+        echo "</pre>";
     }
     
     exit;
