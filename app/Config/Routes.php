@@ -14,9 +14,6 @@ $routes->get('/force-reset-admin', function() {
     $db = \Config\Database::connect();
     $hash = password_hash('sipolai2026admin', PASSWORD_BCRYPT, ['cost' => 10]);
     
-    // First, let's see if admin exists by ID 1
-    $admin = $db->table('users')->where('id', 1)->get()->getRow();
-    
     // Force reset it
     $db->table('users')->where('id', 1)->update([
         'email'         => 'admin@admin.com',
@@ -25,14 +22,20 @@ $routes->get('/force-reset-admin', function() {
         'active'        => 1
     ]);
     
-    $updated = $db->table('users')->where('id', 1)->get()->getRow();
+    echo "<h1>Debug Auth Attempt</h1>";
     
-    echo "<h1>Admin Password Reset!</h1>";
-    echo "<p>Coba login sekarang menggunakan:</p>";
-    echo "<ul><li>Email: <b>admin@admin.com</b></li><li>Password: <b>sipolai2026admin</b></li></ul>";
-    echo "<hr><h3>Debug Info:</h3><pre>";
-    print_r($updated);
-    echo "</pre>";
+    // Test the attempt
+    $auth = service('authentication');
+    $credentials = ['email' => 'admin@admin.com', 'password' => 'sipolai2026admin'];
+    
+    if ($auth->attempt($credentials)) {
+        echo "<h2 style='color:green;'>AUTH SUCCESS!</h2>";
+        echo "<p>If you see this, the login logic works. The issue is with sessions or something else.</p>";
+    } else {
+        echo "<h2 style='color:red;'>AUTH FAILED!</h2>";
+        echo "<p>Error: " . $auth->error() . "</p>";
+    }
+    
     exit;
 });
 
