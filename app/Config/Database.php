@@ -218,9 +218,9 @@ class Database extends Config
         }
 
         // Set encrypt option if enabled (e.g. for SSL connection to TiDB Cloud)
-        $encrypt = getenv('database.default.encrypt') ?: ($_ENV['database.default.encrypt'] ?? null);
+        $encrypt = getenv('DB_SSL') ?: getenv('database.default.encrypt') ?: ($_ENV['DB_SSL'] ?? ($_ENV['database.default.encrypt'] ?? null));
         if ($encrypt === 'true' || $encrypt === '1' || $encrypt === true) {
-            $this->default['encrypt'] = ['ssl_verify' => false];
+            $this->default['encrypt'] = true;
         }
 
         // Ensure that we always set the database group to 'tests' if
