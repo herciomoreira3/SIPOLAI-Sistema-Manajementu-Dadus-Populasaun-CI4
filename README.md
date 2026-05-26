@@ -1,46 +1,46 @@
 # SIPOLAI — Sistema Manajementu Dadus Populasaun (CI4)
 
-Sistem manajemen data populasi dibuat dengan CodeIgniter 4, dikembangkan untuk mengelola data keluarga, penduduk, kartu kependudukan, inventaris, dan laporan terkait.
+Sistem ne'e halo gestao ba dadus populasaun iha base iha CodeIgniter 4. Projetu ne'e bele trata familia, moris-an, karta, inventariu no relatoriu.
 
-## Demo (online)
+🌐 Demo Online
 
 https://sipolai-sistema-manajementu-dadus.onrender.com/
 
-Gunakan kredensial demo untuk login pada aplikasi:
+🔐 Kredensial demo (usu hela ba test):
 
 - Username: `admin`
 - Password: `sipolai2026admin`
 
-> Catatan: Akun demo diberikan hanya untuk pemeriksaan fitur. Jangan gunakan di lingkungan produksi tanpa mengubah kata sandi.
+⚠️ Rekordu: Konto demo maka hatama ba test no demonstra. Hikas seguru troka pasword bainhira iha produsaun.
 
-## Fitur Utama
+🧾 Fitur Prinispal
 
-- Autentikasi pengguna (login/admin)
-- Manajemen `Aldeia` (desa) dan struktur suku/komunitas
-- Manajemen keluarga (`Familia`) dan anggota keluarga
-- Pencatatan kartu (kartu sai / karta tama)
-- Inventarisasi dan pelacakan barang (`Inventoriu` / `Kargu`)
-- Formulir permintaan dan jenis permintaan (`Pedidu`, `TipuPedidu`)
-- Data demografis: populasi, profesi, agama, literatur
-- Seeders dan migrasi database untuk setup awal
-- Upload dan penyimpanan dokumen/foto keluarga pada `public/uploads/`
-- Sistem modul berbasis CodeIgniter 4, mudah dikembangkan dan dimodifikasi
+- 🔒 Autentikasaun no kontrolu sesaun (login/admin)
+- 🏘️ Gerensia `Aldeia` no estruktura komunidade
+- 👪 Gerensia `Familia` no membru familia
+- 🪪 Registro karta (karta sai / karta tama)
+- 📦 Inventariu no rastreio `Kargu`
+- 📝 Formuláriu pedidu no tipu pedidu (`Pedidu`, `TipuPedidu`)
+- 📊 Dadus demografiku: populasaun, profissau, relijiaun, literatura
+- 🔁 Migrations no seeders ba konfigurasaun inicial dobdos
+- 📁 Upload no guarda dokumentu/fotu iha `public/uploads/`
+- 🧩 Arquitetura modular CI4 — fasil pro dezenvolve no modifica
 
-## Struktur Proyek (singkat)
+🗂️ Estrutura Projetu (rezumu)
 
-- `app/` — kode aplikasi (Controllers, Models, Config)
-- `public/` — entrypoint `index.php` dan assets
-- `database/` — migrations dan seeds (setup DB)
+- `app/` — kódigu aplikasaun (Controllers, Models, Config)
+- `public/` — entrada `index.php` no assets
+- `database/` — migrations no seeds (setup DB)
 - `writable/` — cache, logs, uploads
-- `tests/` — pengujian unit dan contoh
+- `tests/` — testu unitariu no exemplos
 
-Untuk detail struktur, lihat folder `app/Models` dan `app/Controllers`.
+Hakat ida hotu ba detalhi, buka pasta `app/Models` no `app/Controllers`.
 
-## Database
+💾 Database
 
-Proyek ini dapat dijalankan menggunakan MySQL/MariaDB dan telah dihubungkan oleh pengguna dengan TiDB (compatible dengan MySQL). Pastikan konfigurasi koneksi database di `app/Config/Database.php` disesuaikan dengan instance TiDB Anda.
+Projetu mak suporta MySQL/MariaDB no kompatível ho TiDB (user hatudu ho TiDB). Ajusta `app/Config/Database.php` to'o datos koneksaun ba TiDB.
 
-Contoh pengaturan environment (.env atau config):
+Exemplu variables ambiente (.env ou config):
 
 DB.default.hostname = your-tidb-host
 DB.default.database = your_database
@@ -48,41 +48,42 @@ DB.default.username = your_user
 DB.default.password = your_password
 DB.default.DBDriver = MySQLi
 
-Jalankan migrasi dan seed (CodeIgniter spark commands):
+Run migrasaun no seed ho CodeIgniter (spark):
 
 ```
 php spark migrate
 php spark db:seed YourSeederName
 ```
 
-## Deployment
+🛠️ Deploy
 
-Proyek ini telah dideploy ke Render.com pada URL demo di atas. Untuk deployment manual:
+Projetu ne'e mak hetan deploy iha Render.com (see URL). Ba deploy manual:
 
-1. Pastikan environment variable untuk database dan baseURL sudah diatur.
-2. Jalankan `composer install` untuk mengunduh dependency.
-3. Jalankan migrasi dan seed jika perlu.
-4. Pastikan `writable/` directory dapat ditulis.
+1. Ajusta environment variables no `baseURL`.
+2. Run `composer install` ba instala dependency.
+3. Run migrations no seed se hakarak.
+4. Assegura pasta `writable/` bele halakon escrita.
 
-## Cara Menjalankan Secara Lokal
+Lokál Running
 
-1. Salin file `.env.example` ke `.env` dan sesuaikan pengaturan.
-2. Jalankan `composer install`.
-3. Jalankan server development:
+1. Kopia `env` to `.env` no ajusta konfigurasaun.
+2. Run `composer install`.
+3. Run server dev:
 
 ```
 php spark serve
 ```
 
-Lalu buka `http://localhost:8080`.
+Abre `http://localhost:8080`.
 
-## Kontribusi
+🤝 Kontribuisaun
 
-Silakan buka issue atau kirim pull request. Ikuti standar coding dan jangan lupa menambahkan test ketika menambah fitur.
+Favor buka issue ka envia pull request. Halo testu sira antes hetan merge.
 
-## Kontak
+📬 Kontaktu
 
-Untuk pertanyaan lebih lanjut, hubungi maintainer repo.
+Kontaktu maintainer repo ba informasaun liu tan.
+
 # CodeIgniter 4 Application Starter
 
 ## What is CodeIgniter?
