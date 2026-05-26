@@ -1,3 +1,88 @@
+# SIPOLAI — Sistema Manajementu Dadus Populasaun (CI4)
+
+Sistem manajemen data populasi dibuat dengan CodeIgniter 4, dikembangkan untuk mengelola data keluarga, penduduk, kartu kependudukan, inventaris, dan laporan terkait.
+
+## Demo (online)
+
+https://sipolai-sistema-manajementu-dadus.onrender.com/
+
+Gunakan kredensial demo untuk login pada aplikasi:
+
+- Username: `admin`
+- Password: `sipolai2026admin`
+
+> Catatan: Akun demo diberikan hanya untuk pemeriksaan fitur. Jangan gunakan di lingkungan produksi tanpa mengubah kata sandi.
+
+## Fitur Utama
+
+- Autentikasi pengguna (login/admin)
+- Manajemen `Aldeia` (desa) dan struktur suku/komunitas
+- Manajemen keluarga (`Familia`) dan anggota keluarga
+- Pencatatan kartu (kartu sai / karta tama)
+- Inventarisasi dan pelacakan barang (`Inventoriu` / `Kargu`)
+- Formulir permintaan dan jenis permintaan (`Pedidu`, `TipuPedidu`)
+- Data demografis: populasi, profesi, agama, literatur
+- Seeders dan migrasi database untuk setup awal
+- Upload dan penyimpanan dokumen/foto keluarga pada `public/uploads/`
+- Sistem modul berbasis CodeIgniter 4, mudah dikembangkan dan dimodifikasi
+
+## Struktur Proyek (singkat)
+
+- `app/` — kode aplikasi (Controllers, Models, Config)
+- `public/` — entrypoint `index.php` dan assets
+- `database/` — migrations dan seeds (setup DB)
+- `writable/` — cache, logs, uploads
+- `tests/` — pengujian unit dan contoh
+
+Untuk detail struktur, lihat folder `app/Models` dan `app/Controllers`.
+
+## Database
+
+Proyek ini dapat dijalankan menggunakan MySQL/MariaDB dan telah dihubungkan oleh pengguna dengan TiDB (compatible dengan MySQL). Pastikan konfigurasi koneksi database di `app/Config/Database.php` disesuaikan dengan instance TiDB Anda.
+
+Contoh pengaturan environment (.env atau config):
+
+DB.default.hostname = your-tidb-host
+DB.default.database = your_database
+DB.default.username = your_user
+DB.default.password = your_password
+DB.default.DBDriver = MySQLi
+
+Jalankan migrasi dan seed (CodeIgniter spark commands):
+
+```
+php spark migrate
+php spark db:seed YourSeederName
+```
+
+## Deployment
+
+Proyek ini telah dideploy ke Render.com pada URL demo di atas. Untuk deployment manual:
+
+1. Pastikan environment variable untuk database dan baseURL sudah diatur.
+2. Jalankan `composer install` untuk mengunduh dependency.
+3. Jalankan migrasi dan seed jika perlu.
+4. Pastikan `writable/` directory dapat ditulis.
+
+## Cara Menjalankan Secara Lokal
+
+1. Salin file `.env.example` ke `.env` dan sesuaikan pengaturan.
+2. Jalankan `composer install`.
+3. Jalankan server development:
+
+```
+php spark serve
+```
+
+Lalu buka `http://localhost:8080`.
+
+## Kontribusi
+
+Silakan buka issue atau kirim pull request. Ikuti standar coding dan jangan lupa menambahkan test ketika menambah fitur.
+
+## Kontak
+
+Untuk pertanyaan lebih lanjut, hubungi maintainer repo.
 # CodeIgniter 4 Application Starter
 
 ## What is CodeIgniter?
