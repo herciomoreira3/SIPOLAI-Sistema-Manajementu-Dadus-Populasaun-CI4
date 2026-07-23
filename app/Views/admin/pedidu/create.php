@@ -307,6 +307,7 @@
                         
                         return `<div class="d-flex justify-content-center">
                                     <button class="btn btn-sm btn-primary btn-rounded btn-create-pedidu shadow-sm" 
+                                            data-id="${data.id_populasaun}"
                                             data-naran="${data.naran_kompletu}" 
                                             data-aldeia="${data.id_aldeia}" 
                                             title="Kria Pedidu">
@@ -444,6 +445,7 @@
 
         // 4. Action: Create standard request with SweetAlert2
         $(document).on('click', '.btn-create-pedidu', function() {
+            var idPopulasaun = $(this).data('id');
             var naran = $(this).data('naran');
             var idAldeia = $(this).data('aldeia');
             var tipu = $('#select-tipu').val();
@@ -479,6 +481,7 @@
                             method: 'POST',
                             data: {
                                 naran_pedidu: tipu,
+                                id_populasaun: idPopulasaun,
                                 pemohon: naran,
                                 id_aldeia: idAldeia,
                                 meta_data: JSON.stringify({ data_mate: dataMate }),
@@ -526,6 +529,7 @@
                         method: 'POST',
                         data: {
                             naran_pedidu: tipu,
+                            id_populasaun: idPopulasaun,
                             pemohon: naran,
                             id_aldeia: idAldeia,
                             <?= csrf_token() ?>: '<?= csrf_hash() ?>'

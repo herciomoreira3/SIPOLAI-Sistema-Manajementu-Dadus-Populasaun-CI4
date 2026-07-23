@@ -116,13 +116,8 @@ php spark serve
 
 **6.** Open in browser http://localhost:8080/admin
 ```bash
-Default user and password
-+----+--------+-------------+
-| No | User   | Password    |
-+----+--------+-------------+
-| 1  | admin  | super-admin |
-| 2  | user   | super-user  |
-+----+--------+-------------+
+Default users are seeded only when passwords are provided by environment variables.
+Set `SIPOLAI_ADMIN_PASSWORD` and optionally `SIPOLAI_MEMBER_PASSWORD` before running the seeder.
 ```
 
 Settings

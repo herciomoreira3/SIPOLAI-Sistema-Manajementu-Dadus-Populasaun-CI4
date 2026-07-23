@@ -71,7 +71,7 @@ class DashboardController extends BaseController
         $totalFamilia = $famQuery->countAllResults();
 
         // New KPI: Kbiit Laek
-        $klQuery = $this->populasaunModel->where('no_kbiit_laek !=', null)->where('no_kbiit_laek !=', '');
+        $klQuery = $this->populasaunModel->where('no_kbiit_laek IS NOT NULL', null, false)->where('no_kbiit_laek !=', '');
         if ($idAldeia) {
             $klQuery = $klQuery->where('id_aldeia', $idAldeia);
         }
@@ -115,7 +115,7 @@ class DashboardController extends BaseController
             // Kbiit Laek
             $countKL = $this->populasaunModel
                 ->where('id_aldeia', $ald['id_aldeia'])
-                ->where('no_kbiit_laek !=', null)
+                ->where('no_kbiit_laek IS NOT NULL', null, false)
                 ->where('no_kbiit_laek !=', '')
                 ->countAllResults();
             $aldeiaKbiitLaek[] = [
@@ -124,11 +124,10 @@ class DashboardController extends BaseController
             ];
             // Eleitores
             $countEleitor = $this->populasaunModel
-                ->join('tabela_pedidu', 'tabela_pedidu.pemohon = tabela_populasaun.naran_kompletu')
-                ->where('tabela_pedidu.naran_pedidu', 'Deklarasaun Eleitoral')
-                ->where('tabela_pedidu.status', 'Aprovadu')
-                ->where('tabela_populasaun.istadu', 'Moris')
-                ->where('tabela_populasaun.id_aldeia', $ald['id_aldeia'])
+                ->where('istadu', 'Moris')
+                ->where('id_aldeia', $ald['id_aldeia'])
+                ->where('no_eleitoral IS NOT NULL', null, false)
+                ->where('no_eleitoral !=', '')
                 ->countAllResults();
             $aldeiaEleitores[] = [
                 'naran' => $ald['naran_aldeia'],
@@ -223,7 +222,7 @@ class DashboardController extends BaseController
         }
 
         // --- CHART: ELEITOR VS NON-ELEITOR ---
-        $eleitorQuery = $this->populasaunModel->where('no_eleitoral !=', null)->where('no_eleitoral !=', '');
+        $eleitorQuery = $this->populasaunModel->where('no_eleitoral IS NOT NULL', null, false)->where('no_eleitoral !=', '');
         if ($idAldeia) {
             $eleitorQuery = $eleitorQuery->where('id_aldeia', $idAldeia);
         }
@@ -388,4 +387,3 @@ class DashboardController extends BaseController
         ]);
     }
 }
-

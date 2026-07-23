@@ -30,12 +30,10 @@ class KbiitLaekController extends BaseController
             
             $db = \Config\Database::connect();
             
-            // Base builder for vulnerable population (tabela_populasaun who have approved Deklarasaun Kbiit Laek in tabela_pedidu)
             $baseBuilder = function() use ($db, $id_aldeia) {
+                $latestApprovedPedidu = "(SELECT MAX(tp.id_pedidu) FROM tabela_pedidu tp WHERE tp.id_populasaun = tabela_populasaun.id_populasaun AND tp.naran_pedidu = " . $db->escape('Deklarasaun Kbiit Laek') . " AND tp.status = 'Aprovadu')";
                 $builder = $db->table('tabela_populasaun')
-                    ->join('tabela_pedidu', 'tabela_pedidu.pemohon = tabela_populasaun.naran_kompletu', 'inner')
-                    ->where('tabela_pedidu.naran_pedidu', 'Deklarasaun Kbiit Laek')
-                    ->where('tabela_pedidu.status', 'Aprovadu')
+                    ->join('tabela_pedidu', "tabela_pedidu.id_pedidu = {$latestApprovedPedidu}", 'inner', false)
                     ->where('tabela_populasaun.istadu', 'Moris');
 
                 if (in_groups('xefe-aldeia') && !empty(user()->id_aldeia)) {
@@ -75,12 +73,6 @@ class KbiitLaekController extends BaseController
                     ->orLike('tabela_aldeia.naran_aldeia', $search)
                     ->groupEnd();
             }
-            $dataBuilder->groupBy([
-                'tabela_populasaun.id_populasaun',
-                'tabela_aldeia.naran_aldeia',
-                'tabela_pedidu.data_pedidu',
-                'tabela_pedidu.id_pedidu'
-            ]);
             $data = $dataBuilder->limit($length, $start)->get()->getResultArray();
 
             return $this->respond([
@@ -105,7 +97,7 @@ class KbiitLaekController extends BaseController
 
     public function update($id = null)
     {
-        if (!in_groups(['admin', 'xefe-suku', 'xefe-aldeia', 'sekretaria'])) {
+        if (!in_groups(['admin', 'xefe-suku', 'sekretaria'])) {
             return $this->failForbidden('Ita boot la iha kbiit/autorizasaun atu atualiza dadus kbiit laek!');
         }
 
@@ -113,11 +105,36 @@ class KbiitLaekController extends BaseController
         if (!$populasaun) {
             return $this->failNotFound('Dadus populasaun la hetan!');
         }
+        if (! $this->canAccessAldeia($populasaun['id_aldeia'])) {
+            return $this->failForbidden('Ita boot labele atualiza kbiit laek husi aldeia seluk.');
+        }
 
-        $noKbiitLaek = $this->request->getPost('no_kbiit_laek');
+        $db = \Config\Database::connect();
+        $approvedPedidu = $db->table('tabela_pedidu')
+            ->where('id_populasaun', $id)
+            ->where('naran_pedidu', 'Deklarasaun Kbiit Laek')
+            ->where('status', 'Aprovadu')
+            ->countAllResults();
+        if ($approvedPedidu === 0) {
+            return $this->fail('Sidadaun nee seidauk iha Deklarasaun Kbiit Laek aprovadu.');
+        }
+
+        $noKbiitLaek = trim((string) $this->request->getPost('no_kbiit_laek'));
+        if ($noKbiitLaek !== '' && strlen($noKbiitLaek) > 50) {
+            return $this->fail('Numeru Kartaun/Sertifikadu Kbiit Laek labele liu karakter 50.');
+        }
+        if ($noKbiitLaek !== '') {
+            $exists = $this->populasaunModel
+                ->where('no_kbiit_laek', $noKbiitLaek)
+                ->where('id_populasaun !=', $id)
+                ->first();
+            if ($exists) {
+                return $this->fail('Numeru Kartaun/Sertifikadu Kbiit Laek nee uza ona husi sidadaun seluk.');
+            }
+        }
 
         $this->populasaunModel->update($id, [
-            'no_kbiit_laek' => $noKbiitLaek ?: null
+            'no_kbiit_laek' => $noKbiitLaek !== '' ? $noKbiitLaek : null
         ]);
 
         return $this->respond([

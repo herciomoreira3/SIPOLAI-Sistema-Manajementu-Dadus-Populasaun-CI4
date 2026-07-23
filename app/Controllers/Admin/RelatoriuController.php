@@ -24,10 +24,6 @@ class RelatoriuController extends BaseController
         $this->aldeiaModel = new AldeiaModel();
         $this->profisaunModel = new ProfisaunModel();
         $this->literaturaModel = new LiteraturaModel();
-
-        // Automatically clean up deleted Maternidade template
-        $db = \Config\Database::connect();
-        $db->table('tabela_formatu_relatoriu')->where('naran_relatoriu', 'Relatoriu Maternidade')->delete();
     }
 
     public function index()
@@ -291,7 +287,13 @@ class RelatoriuController extends BaseController
         foreach ($muda as &$row) {
             $row['data_muda'] = '-';
             $pedidu = $db->table('tabela_pedidu')
-                ->where('pemohon', $row['naran_kompletu'])
+                ->groupStart()
+                    ->where('id_populasaun', $row['id_populasaun'])
+                    ->orGroupStart()
+                        ->where('id_populasaun', null)
+                        ->where('pemohon', $row['naran_kompletu'])
+                    ->groupEnd()
+                ->groupEnd()
                 ->where('naran_pedidu', 'Deklarasaun Muda Domisiliu')
                 ->where('status', 'Aprovadu')
                 ->orderBy('id_pedidu', 'desc')
@@ -344,6 +346,7 @@ class RelatoriuController extends BaseController
         $query = $this->populasaunModel->select('tabela_populasaun.*, tabela_aldeia.naran_aldeia')
                                         ->join('tabela_aldeia', 'tabela_aldeia.id_aldeia = tabela_populasaun.id_aldeia', 'left')
                                         ->where('tabela_populasaun.istadu', 'Moris')
+                                        ->where('tabela_populasaun.no_eleitoral IS NOT NULL', null, false)
                                         ->where('tabela_populasaun.no_eleitoral !=', '');
         
         if (in_groups('xefe-aldeia') && !empty(user()->id_aldeia)) {
@@ -405,6 +408,7 @@ class RelatoriuController extends BaseController
                                         ->join('tabela_aldeia', 'tabela_aldeia.id_aldeia = tabela_populasaun.id_aldeia', 'left')
                                         ->join('tabela_profisaun', 'tabela_profisaun.id_profisaun = tabela_populasaun.id_profisaun', 'left')
                                         ->where('tabela_populasaun.istadu', 'Moris')
+                                        ->where('tabela_populasaun.no_kbiit_laek IS NOT NULL', null, false)
                                         ->where('tabela_populasaun.no_kbiit_laek !=', '');
         
         if (in_groups('xefe-aldeia') && !empty(user()->id_aldeia)) {

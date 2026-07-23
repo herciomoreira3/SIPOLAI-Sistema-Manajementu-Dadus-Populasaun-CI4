@@ -19,7 +19,7 @@ $routes->group('admin', function ($routes) {
         'filter'    => 'permission:back-office',
         'namespace' => 'Boilerplate\Controllers\Users',
     ], function ($routes) {
-        $routes->match(['get', 'post'], 'profile', 'UserController::profile', ['as' => 'user-profile']);
+        $routes->match(['GET', 'POST'], 'profile', 'UserController::profile', ['as' => 'user-profile']);
         $routes->resource('manage', [
             'filter'     => 'permission:manage-user',
             'namespace'  => 'Boilerplate\Controllers\Users',

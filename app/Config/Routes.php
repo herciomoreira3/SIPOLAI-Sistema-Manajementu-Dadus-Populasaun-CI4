@@ -9,66 +9,6 @@ $routes->get('/', function() {
     return redirect()->to('/admin');
 });
 
-// TEMPORARY DEBUG ROUTE
-$routes->get('/force-reset-admin', function() {
-    $db = \Config\Database::connect();
-    
-    echo "<h1>Fixing Database & Permissions...</h1>";
-    
-    // 1. Delete the admin user we just created to avoid Seeder conflicts
-    $db->table('users')->where('email', 'admin@admin.com')->delete();
-    $db->table('users')->where('email', 'user@user.com')->delete(); // Just in case
-    
-    // 2. Clear tables that BoilerplateSeeder seeds so it doesn't crash on unique constraints
-    // (We use ignore/skip for groups if they exist, but menus don't have unique constraints so we should truncate menu to avoid duplicates)
-    $db->table('menu')->truncate();
-    $db->table('groups_menu')->truncate();
-    
-    // 3. Run the BoilerplateSeeder to seed all Roles, Permissions, and Menus!
-    try {
-        $seeder = \Config\Database::seeder();
-        $seeder->call('Boilerplate\Database\Seeds\BoilerplateSeeder');
-        echo "<p style='color:green;'>✅ BoilerplateSeeder ran successfully (Menus and Permissions restored).</p>";
-    } catch (\Throwable $e) {
-        echo "<p style='color:orange;'>⚠️ Seeder note: " . $e->getMessage() . "</p>";
-    }
-    
-    // 4. Update the admin password to sipolai2026admin
-    $hash = \Myth\Auth\Password::hash('sipolai2026admin');
-    $db->table('users')->where('email', 'admin@admin.com')->update([
-        'password_hash' => $hash,
-        'active'        => 1,
-        'deleted_at'    => null
-    ]);
-    echo "<p style='color:green;'>✅ Admin password updated to sipolai2026admin.</p>";
-    
-    // 5. Test the attempt
-    $auth = service('authentication');
-    $credentials = ['email' => 'admin@admin.com', 'password' => 'sipolai2026admin'];
-    
-    if ($auth->attempt($credentials)) {
-        echo "<h2 style='color:green;'>AUTH SUCCESS!</h2>";
-        echo "<p>Coba login sekarang menggunakan:</p>";
-        echo "<ul><li>Email: <b>admin@admin.com</b></li><li>Password: <b>sipolai2026admin</b></li></ul>";
-        echo "<p><a href='" . site_url('admin') . "'>Klik di sini untuk masuk ke Dashboard</a></p>";
-    } else {
-        echo "<h2 style='color:red;'>AUTH FAILED!</h2>";
-        echo "<p>Error: " . $auth->error() . "</p>";
-        
-        echo "<hr><h3>Querying exactly by email:</h3><pre>";
-        $byEmail = $db->table('users')->where('email', 'admin@admin.com')->get()->getRowArray();
-        print_r($byEmail);
-        echo "</pre>";
-        
-        echo "<hr><h3>Querying exactly by username:</h3><pre>";
-        $byUser = $db->table('users')->where('username', 'admin')->get()->getRowArray();
-        print_r($byUser);
-        echo "</pre>";
-    }
-    
-    exit;
-});
-
 $routes->group('admin', ['filter' => 'login'], function($routes) {
     // --- ADMIN ONLY ROUTES ---
     $routes->group('', ['filter' => 'role:admin'], function($routes) {
@@ -76,7 +16,7 @@ $routes->group('admin', ['filter' => 'login'], function($routes) {
         $routes->resource('profisaun', ['controller' => '\App\Controllers\Admin\ProfisaunController']);
         $routes->resource('relijiaun', ['controller' => '\App\Controllers\Admin\RelijiaunController']);
         $routes->resource('literatura', ['controller' => '\App\Controllers\Admin\LiteraturaController']);
-        
+
         $routes->get('promosaun', '\App\Controllers\Admin\EstruturaSukuController::promosaun', ['as' => 'promosaun']);
         $routes->get('estrutura/users', '\App\Controllers\Admin\EstruturaSukuController::manageUsers', ['as' => 'estrutura-users']);
         $routes->post('estrutura/users/create', '\App\Controllers\Admin\EstruturaSukuController::createUser', ['as' => 'estrutura-users-create']);
@@ -111,7 +51,7 @@ $routes->group('admin', ['filter' => 'login'], function($routes) {
     $routes->get('pedidu/(:num)/print', '\App\Controllers\Admin\PediduController::print/$1', ['as' => 'pedidu-print']);
     $routes->post('pedidu/(:num)/status', '\App\Controllers\Admin\PediduController::updateStatus/$1', ['as' => 'pedidu-status']);
     $routes->resource('pedidu', ['controller' => '\App\Controllers\Admin\PediduController']);
-    
+
     // User Edit Fallback Routes for Boilerplate
     $routes->post('user/manage/(:num)/update', '\Boilerplate\Controllers\Users\UserController::update/$1');
     $routes->post('user/manage/(:num)', '\Boilerplate\Controllers\Users\UserController::update/$1');
@@ -123,7 +63,7 @@ $routes->group('admin', ['filter' => 'login'], function($routes) {
     $routes->get('familia/data', '\App\Controllers\Admin\FamiliaController::ajaxData', ['as' => 'familia-data']);
     $routes->post('familia/(:num)/upload-foto', '\App\Controllers\Admin\FamiliaController::uploadFoto/$1', ['as' => 'familia-upload-foto']);
     $routes->post('familia/(:num)/add', '\App\Controllers\Admin\FamiliaController::addMembro/$1', ['as' => 'familia-add-membro']);
-    $routes->get('familia/(:num)/remove/(:num)', '\App\Controllers\Admin\FamiliaController::removeMembro/$1/$2', ['as' => 'familia-remove-membro']);
+    $routes->post('familia/(:num)/remove/(:num)', '\App\Controllers\Admin\FamiliaController::removeMembro/$1/$2', ['as' => 'familia-remove-membro']);
     $routes->resource('familia', ['controller' => '\App\Controllers\Admin\FamiliaController']);
 
     // Relatoriu
@@ -145,7 +85,3 @@ $routes->group('admin', ['filter' => 'login'], function($routes) {
     $routes->get('kbiit-laek', '\App\Controllers\Admin\KbiitLaekController::index', ['as' => 'kbiit-laek-index']);
     $routes->post('kbiit-laek/(:num)/update', '\App\Controllers\Admin\KbiitLaekController::update/$1', ['as' => 'kbiit-laek-update']);
 });
-
-
-
-

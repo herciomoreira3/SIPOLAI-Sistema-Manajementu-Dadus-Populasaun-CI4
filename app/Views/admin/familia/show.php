@@ -180,9 +180,12 @@
                                             <a href="<?= base_url('admin/populasaun/' . $membru['id_populasaun'] . '/edit') ?>" class="btn btn-sm btn-info rounded-circle mr-1" title="Hadia Rezidente">
                                                 <i class="fas fa-edit"></i>
                                             </a>
-                                            <a href="<?= base_url('admin/familia/' . $familia['id_familia'] . '/remove/' . $membru['id_populasaun']) ?>" class="btn btn-sm btn-danger rounded-circle remove-member-btn" title="Hasai husi Fixa Familia">
-                                                <i class="fas fa-user-minus"></i>
-                                            </a>
+                                            <form action="<?= base_url('admin/familia/' . $familia['id_familia'] . '/remove/' . $membru['id_populasaun']) ?>" method="POST" class="d-inline remove-member-form">
+                                                <?= csrf_field() ?>
+                                                <button type="submit" class="btn btn-sm btn-danger rounded-circle" title="Hasai husi Fixa Familia">
+                                                    <i class="fas fa-user-minus"></i>
+                                                </button>
+                                            </form>
                                         </td>
                                     </tr>
                                 <?php endforeach; ?>
@@ -524,12 +527,9 @@ foreach ($membros as $m) {
         });
 
         // SweetAlert Remove Member Confirmation
-        $('.remove-member-btn').on('click', function(e) {
+        $('.remove-member-form').on('submit', function(e) {
             e.preventDefault();
-            var url = e.currentTarget.href || $(this).attr('href');
-            if (!url) {
-                return;
-            }
+            var form = this;
             Swal.fire({
                 title: 'Hasai membru ne\'e?',
                 text: "Membru ne'e sei hasai husi Fixa Familia maibe sei la hamoos husi dadus populasaun!",
@@ -541,7 +541,7 @@ foreach ($membros as $m) {
                 cancelButtonText: 'Kansela'
             }).then((result) => {
                 if (result.isConfirmed || result.value === true) {
-                    window.location.href = url;
+                    form.submit();
                 }
             });
         });

@@ -3,20 +3,20 @@
 namespace App\Database\Migrations;
 
 use CodeIgniter\Database\Migration;
-use Myth\Auth\Entities\User;
-use Myth\Auth\Models\UserModel;
 
 class ResetAdminCredentials extends Migration
 {
     public function up()
     {
+        $password = $this->configuredAdminPassword();
+        if ($password === null) {
+            log_message('warning', 'Skip ResetAdminCredentials: SIPOLAI_ADMIN_PASSWORD/ADMIN_DEFAULT_PASSWORD not configured.');
+            return;
+        }
+
         $db = \Config\Database::connect();
-        
-        $password = 'sipolai2026admin';
-        // Myth\Auth uses PASSWORD_BCRYPT with cost set to 10 by default
         $hash = password_hash($password, PASSWORD_BCRYPT, ['cost' => 10]);
 
-        // Update username and password directly via query builder
         $db->table('users')
             ->where('email', 'admin@admin.com')
             ->update([
@@ -24,8 +24,7 @@ class ResetAdminCredentials extends Migration
                 'password_hash' => $hash,
                 'active'        => 1
             ]);
-            
-        // Also ensure user with username 'admin' has this email and password
+
         $db->table('users')
             ->where('username', 'admin')
             ->update([
@@ -37,14 +36,16 @@ class ResetAdminCredentials extends Migration
 
     public function down()
     {
-        $db = \Config\Database::connect();
-        $hash = password_hash('super-admin', PASSWORD_BCRYPT, ['cost' => 10]);
-        
-        $db->table('users')
-            ->where('email', 'admin@admin.com')
-            ->update([
-                'username'      => 'admin',
-                'password_hash' => $hash
-            ]);
+        // Password resets are intentionally not reversed.
+    }
+
+    private function configuredAdminPassword(): ?string
+    {
+        $password = env('SIPOLAI_ADMIN_PASSWORD') ?: env('ADMIN_DEFAULT_PASSWORD');
+        if (! is_string($password) || trim($password) === '') {
+            return null;
+        }
+
+        return $password;
     }
 }

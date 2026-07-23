@@ -333,8 +333,8 @@
                 },
                 {
                     "data": function(data) {
-                        let createMortUrl = `<?= route_to('admin/pedidu') ?>/new?naran_pedidu=Deklarasaun%20Mortalidade&pemohon=${encodeURIComponent(data.naran_kompletu)}&id_aldeia=${data.id_aldeia}`;
-                        let createMudaUrl = `<?= route_to('admin/pedidu') ?>/new?naran_pedidu=Deklarasaun%20Muda%20Domisiliu&pemohon=${encodeURIComponent(data.naran_kompletu)}&id_aldeia=${data.id_aldeia}`;
+                        let createMortUrl = `<?= route_to('admin/pedidu') ?>/new?naran_pedidu=Deklarasaun%20Mortalidade&id_populasaun=${data.id_populasaun}&pemohon=${encodeURIComponent(data.naran_kompletu)}&id_aldeia=${data.id_aldeia}`;
+                        let createMudaUrl = `<?= route_to('admin/pedidu') ?>/new?naran_pedidu=Deklarasaun%20Muda%20Domisiliu&id_populasaun=${data.id_populasaun}&pemohon=${encodeURIComponent(data.naran_kompletu)}&id_aldeia=${data.id_aldeia}`;
                         return `<div class="d-flex justify-content-center">
                                     <a class="btn btn-sm btn-danger btn-rounded shadow-sm px-3 mr-2" href="${createMortUrl}" title="Kria Pedidu Mortalidade">
                                         <i class="fas fa-skull-crossbones mr-1"></i> Kria Pedidu Mate

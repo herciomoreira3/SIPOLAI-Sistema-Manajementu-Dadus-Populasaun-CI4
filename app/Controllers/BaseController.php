@@ -42,4 +42,43 @@ abstract class BaseController extends Controller
         // Preload any models, libraries, etc, here.
         // $this->session = service('session');
     }
+
+    protected function currentUserId(): ?int
+    {
+        if (! function_exists('user') || ! user()) {
+            return null;
+        }
+
+        return (int) user()->id;
+    }
+
+    protected function currentUserAldeiaId(): ?int
+    {
+        if (! function_exists('user') || ! user() || empty(user()->id_aldeia)) {
+            return null;
+        }
+
+        return (int) user()->id_aldeia;
+    }
+
+    protected function canAccessAldeia($idAldeia): bool
+    {
+        if (function_exists('in_groups') && in_groups('xefe-aldeia')) {
+            $userAldeia = $this->currentUserAldeiaId();
+
+            return $userAldeia !== null && (int) $idAldeia === $userAldeia;
+        }
+
+        return true;
+    }
+
+    protected function hasAnyRole(array $roles): bool
+    {
+        return function_exists('in_groups') && in_groups($roles);
+    }
+
+    protected function redirectForbidden(string $message = 'Ita boot la iha autorizasaun ba asaun ne\'e.')
+    {
+        return redirect()->back()->with('error', $message)->with('sweet-error', $message);
+    }
 }

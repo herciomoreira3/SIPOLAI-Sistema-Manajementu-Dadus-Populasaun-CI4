@@ -20,27 +20,32 @@ class UserDummySeeder extends Seeder
             [
                 'username'  => 'xefesuku',
                 'email'     => 'suku@sipolai.com',
-                'password'  => 'xefesuku123',
+                'password'  => env('SIPOLAI_XEFE_SUKU_PASSWORD'),
                 'id_aldeia' => null,
                 'group'     => $groupXefeSuku
             ],
             [
                 'username'  => 'xefealdeia',
                 'email'     => 'aldeia@sipolai.com',
-                'password'  => 'xefealdeia123',
+                'password'  => env('SIPOLAI_XEFE_ALDEIA_PASSWORD'),
                 'id_aldeia' => 1, // Aldeia Uaisa
                 'group'     => $groupXefeAldeia
             ],
             [
                 'username'  => 'sekretaria',
                 'email'     => 'sekretaria@sipolai.com',
-                'password'  => 'sekretaria123',
+                'password'  => env('SIPOLAI_SEKRETARIA_PASSWORD'),
                 'id_aldeia' => null,
                 'group'     => $groupSekretaria
             ]
         ];
 
         foreach ($users as $u) {
+            if (! is_string($u['password']) || trim($u['password']) === '') {
+                log_message('warning', 'Skip user seed for ' . $u['username'] . ': password environment variable not configured.');
+                continue;
+            }
+
             // Check if user exists
             $check = $db->table('users')->where('username', $u['username'])->get()->getRow();
             if (!$check) {

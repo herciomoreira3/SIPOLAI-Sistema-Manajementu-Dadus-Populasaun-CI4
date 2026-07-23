@@ -12,7 +12,8 @@ class PediduModel extends Model
     protected $returnType       = 'array';
     protected $protectFields    = true;
     protected $allowedFields    = [
-        'naran_pedidu', 'pemohon', 'data_pedidu', 'status', 'id_aldeia', 'meta_data'
+        'id_populasaun', 'naran_pedidu', 'pemohon', 'data_pedidu', 'status', 'id_aldeia', 'meta_data',
+        'approved_by', 'approved_at', 'rejected_by', 'rejected_at', 'voided_by', 'voided_at', 'void_reason'
     ];
 
     protected $useTimestamps = true;

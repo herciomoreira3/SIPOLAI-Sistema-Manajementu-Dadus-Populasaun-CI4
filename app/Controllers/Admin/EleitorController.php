@@ -30,13 +30,10 @@ class EleitorController extends BaseController
             
             $db = \Config\Database::connect();
             
-            // Base builder for electors (tabela_populasaun who have approved Deklarasaun Eleitoral in tabela_pedidu)
-            // Join is based on applicant name matching full name
             $baseBuilder = function() use ($db, $id_aldeia) {
+                $latestApprovedPedidu = "(SELECT MAX(tp.id_pedidu) FROM tabela_pedidu tp WHERE tp.id_populasaun = tabela_populasaun.id_populasaun AND tp.naran_pedidu = " . $db->escape('Deklarasaun Eleitoral') . " AND tp.status = 'Aprovadu')";
                 $builder = $db->table('tabela_populasaun')
-                    ->join('tabela_pedidu', 'tabela_pedidu.pemohon = tabela_populasaun.naran_kompletu', 'inner')
-                    ->where('tabela_pedidu.naran_pedidu', 'Deklarasaun Eleitoral')
-                    ->where('tabela_pedidu.status', 'Aprovadu')
+                    ->join('tabela_pedidu', "tabela_pedidu.id_pedidu = {$latestApprovedPedidu}", 'inner', false)
                     ->where('tabela_populasaun.istadu', 'Moris');
 
                 if (in_groups('xefe-aldeia') && !empty(user()->id_aldeia)) {
@@ -76,13 +73,6 @@ class EleitorController extends BaseController
                     ->orLike('tabela_aldeia.naran_aldeia', $search)
                     ->groupEnd();
             }
-            // Group by id_populasaun to ensure we don't get duplicates if they have multiple declarations (though rare)
-            $dataBuilder->groupBy([
-                'tabela_populasaun.id_populasaun',
-                'tabela_aldeia.naran_aldeia',
-                'tabela_pedidu.data_pedidu',
-                'tabela_pedidu.id_pedidu'
-            ]);
             $data = $dataBuilder->limit($length, $start)->get()->getResultArray();
 
             return $this->respond([
@@ -108,7 +98,7 @@ class EleitorController extends BaseController
     public function update($id = null)
     {
         // Only Authorized Roles can update Voter Card Numbers
-        if (!in_groups(['admin', 'xefe-suku', 'xefe-aldeia', 'sekretaria'])) {
+        if (!in_groups(['admin', 'xefe-suku', 'sekretaria'])) {
             return $this->failForbidden('Ita boot la iha kbiit/autorizasaun atu atualiza dadus eleitor!');
         }
 
@@ -116,11 +106,36 @@ class EleitorController extends BaseController
         if (!$populasaun) {
             return $this->failNotFound('Dadus populasaun la hetan!');
         }
+        if (! $this->canAccessAldeia($populasaun['id_aldeia'])) {
+            return $this->failForbidden('Ita boot labele atualiza eleitor husi aldeia seluk.');
+        }
 
-        $noEleitoral = $this->request->getPost('no_eleitoral');
+        $db = \Config\Database::connect();
+        $approvedPedidu = $db->table('tabela_pedidu')
+            ->where('id_populasaun', $id)
+            ->where('naran_pedidu', 'Deklarasaun Eleitoral')
+            ->where('status', 'Aprovadu')
+            ->countAllResults();
+        if ($approvedPedidu === 0) {
+            return $this->fail('Sidadaun nee seidauk iha Deklarasaun Eleitoral aprovadu.');
+        }
+
+        $noEleitoral = trim((string) $this->request->getPost('no_eleitoral'));
+        if ($noEleitoral !== '' && strlen($noEleitoral) > 50) {
+            return $this->fail('Numeiru Kartaun Eleitoral labele liu karakter 50.');
+        }
+        if ($noEleitoral !== '') {
+            $exists = $this->populasaunModel
+                ->where('no_eleitoral', $noEleitoral)
+                ->where('id_populasaun !=', $id)
+                ->first();
+            if ($exists) {
+                return $this->fail('Numeiru Kartaun Eleitoral nee uza ona husi sidadaun seluk.');
+            }
+        }
 
         $this->populasaunModel->update($id, [
-            'no_eleitoral' => $noEleitoral ?: null
+            'no_eleitoral' => $noEleitoral !== '' ? $noEleitoral : null
         ]);
 
         return $this->respond([

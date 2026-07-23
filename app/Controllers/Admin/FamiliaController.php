@@ -137,11 +137,16 @@ class FamiliaController extends BaseController
             return redirect()->back()->withInput()->with('errors', $this->validator->getErrors());
         }
 
+        $idAldeia = (int) $this->request->getPost('id_aldeia');
+        if (! $this->canAccessAldeia($idAldeia)) {
+            return $this->redirectForbidden('Ita boot labele kria fixa familia ba aldeia seluk.');
+        }
+
         $numeruFixa = $this->generateUniqueNumeruFixa();
 
         $this->familiaModel->save([
             'numeru_kk' => $numeruFixa,
-            'id_aldeia' => $this->request->getPost('id_aldeia')
+            'id_aldeia' => $idAldeia
         ]);
 
         return redirect()->to('/admin/familia')->with('message', 'Fixa Familia foun kria ho susesu!');
@@ -152,6 +157,9 @@ class FamiliaController extends BaseController
         $familia = $this->familiaModel->find($id);
         if (!$familia) {
             return redirect()->to('/admin/familia')->with('error', 'Fixa Familia la hetan!');
+        }
+        if (! $this->canAccessAldeia($familia['id_aldeia'])) {
+            return $this->redirectForbidden('Ita boot labele hadia fixa familia husi aldeia seluk.');
         }
 
         $aldeias = $this->aldeiaModel->findAll();
@@ -171,6 +179,14 @@ class FamiliaController extends BaseController
 
     public function update($id = null)
     {
+        $familia = $this->familiaModel->find($id);
+        if (!$familia) {
+            return redirect()->to('/admin/familia')->with('error', 'Fixa Familia la hetan!');
+        }
+        if (! $this->canAccessAldeia($familia['id_aldeia'])) {
+            return $this->redirectForbidden('Ita boot labele hadia fixa familia husi aldeia seluk.');
+        }
+
         $rules = [
             'id_aldeia' => 'required|is_not_unique[tabela_aldeia.id_aldeia]'
         ];
@@ -179,8 +195,18 @@ class FamiliaController extends BaseController
             return redirect()->back()->withInput()->with('errors', $this->validator->getErrors());
         }
 
+        $idAldeia = (int) $this->request->getPost('id_aldeia');
+        if (! $this->canAccessAldeia($idAldeia)) {
+            return $this->redirectForbidden('Ita boot labele muda fixa familia ba aldeia seluk.');
+        }
+
+        $memberCount = $this->populasaunModel->where('id_familia', $id)->countAllResults();
+        if ($memberCount > 0 && (int) $familia['id_aldeia'] !== $idAldeia) {
+            return redirect()->back()->withInput()->with('error', 'Fixa Familia iha membru ona, labele muda aldeia.');
+        }
+
         $this->familiaModel->update($id, [
-            'id_aldeia' => $this->request->getPost('id_aldeia')
+            'id_aldeia' => $idAldeia
         ]);
 
         return redirect()->to('/admin/familia')->with('message', 'Fixa Familia aktualizadu ho susesu!');
@@ -194,6 +220,9 @@ class FamiliaController extends BaseController
                                       
         if (!$familia) {
             return redirect()->to('/admin/familia')->with('error', 'Fixa Familia la hetan!');
+        }
+        if (! $this->canAccessAldeia($familia['id_aldeia'])) {
+            return $this->redirectForbidden('Ita boot labele haree fixa familia husi aldeia seluk.');
         }
 
         $membros = $this->populasaunModel->select('tabela_populasaun.*, tabela_profisaun.naran_profisaun, tabela_relijiaun.naran_relijiaun, tabela_literatura.naran_literatura')
@@ -239,10 +268,19 @@ class FamiliaController extends BaseController
 
     public function addMembro($idFamilia)
     {
+        $familia = $this->familiaModel->find($idFamilia);
+        if (!$familia) {
+            return redirect()->to('/admin/familia')->with('error', 'Fixa Familia la hetan!');
+        }
+        if (! $this->canAccessAldeia($familia['id_aldeia'])) {
+            return $this->redirectForbidden('Ita boot labele aumenta membru ba fixa familia husi aldeia seluk.');
+        }
+
         $idPopulasaun = $this->request->getPost('id_populasaun');
         $relasaun = $this->request->getPost('relasaun_familia');
+        $allowedRelasaun = ['Xefe Familia', 'Fen', 'Oan', 'Seluk'];
 
-        if (empty($idPopulasaun) || empty($relasaun)) {
+        if (empty($idPopulasaun) || empty($relasaun) || ! in_array($relasaun, $allowedRelasaun, true)) {
             return redirect()->back()->with('error', 'Membru no Relasaun tenki hili!');
         }
 
@@ -250,9 +288,26 @@ class FamiliaController extends BaseController
         if (!$pop) {
             return redirect()->back()->with('error', 'Sidadaun la hetan!');
         }
+        if ((int) $pop['id_aldeia'] !== (int) $familia['id_aldeia'] || ! $this->canAccessAldeia($pop['id_aldeia'])) {
+            return redirect()->back()->with('error', 'Sidadaun nee la pertense ba aldeia fixa familia nian.');
+        }
+        if ($pop['istadu'] !== 'Moris') {
+            return redirect()->back()->with('error', 'Sidadaun nebe Mate ka Muda labele aumenta ba fixa familia ativa.');
+        }
+        if (! empty($pop['id_familia']) && (int) $pop['id_familia'] !== (int) $idFamilia) {
+            return redirect()->back()->with('error', 'Sidadaun nee pertense ona ba fixa familia seluk.');
+        }
+
+        $hasXefe = $this->familiaHasXefe((int) $idFamilia);
 
         if ($relasaun === 'Xefe Familia' && $pop['jeneru'] !== 'Mane') {
             return redirect()->back()->with('error', 'Xefe Familia tenki Mane de\'it!');
+        }
+        if ($relasaun === 'Xefe Familia' && $hasXefe) {
+            return redirect()->back()->with('error', 'Fixa Familia nee iha ona Xefe Familia.');
+        }
+        if ($relasaun !== 'Xefe Familia' && ! $hasXefe) {
+            return redirect()->back()->with('error', 'Tenki aumenta Xefe Familia uluk antes aumenta membru seluk.');
         }
 
         $this->populasaunModel->update($idPopulasaun, [
@@ -265,6 +320,19 @@ class FamiliaController extends BaseController
 
     public function removeMembro($idFamilia, $idPopulasaun)
     {
+        $familia = $this->familiaModel->find($idFamilia);
+        if (!$familia) {
+            return redirect()->to('/admin/familia')->with('error', 'Fixa Familia la hetan!');
+        }
+        if (! $this->canAccessAldeia($familia['id_aldeia'])) {
+            return $this->redirectForbidden('Ita boot labele hasai membru husi fixa familia aldeia seluk.');
+        }
+
+        $pop = $this->populasaunModel->find($idPopulasaun);
+        if (!$pop || (int) $pop['id_familia'] !== (int) $idFamilia) {
+            return redirect()->to("/admin/familia/{$idFamilia}")->with('error', 'Membru la pertense ba fixa familia nee.');
+        }
+
         $this->populasaunModel->where('id_populasaun', $idPopulasaun)->set([
             'id_familia'       => null,
             'relasaun_familia' => null
@@ -278,6 +346,19 @@ class FamiliaController extends BaseController
         $familia = $this->familiaModel->find($id);
         if (!$familia) {
             return redirect()->back()->with('error', 'Fixa Familia la hetan!');
+        }
+        if (! $this->canAccessAldeia($familia['id_aldeia'])) {
+            return $this->redirectForbidden('Ita boot labele upload foto ba fixa familia aldeia seluk.');
+        }
+        if (! $this->familiaHasXefe((int) $id)) {
+            return redirect()->back()->with('error', 'Upload foto bele halo depois fixa familia iha Xefe Familia.');
+        }
+
+        $rules = [
+            'foto' => 'uploaded[foto]|is_image[foto]|mime_in[foto,image/jpg,image/jpeg,image/png,image/webp]|max_size[foto,2048]',
+        ];
+        if (! $this->validate($rules)) {
+            return redirect()->back()->with('error', implode(' ', $this->validator->getErrors()));
         }
 
         $img = $this->request->getFile('foto');
@@ -309,11 +390,18 @@ class FamiliaController extends BaseController
 
     public function delete($id = null)
     {
-        // Unbind all family members
-        $this->populasaunModel->where('id_familia', $id)->set([
-            'id_familia'       => null,
-            'relasaun_familia' => null
-        ])->update();
+        $familia = $this->familiaModel->find($id);
+        if (!$familia) {
+            return redirect()->to('/admin/familia')->with('error', 'Fixa Familia la hetan!');
+        }
+        if (! $this->canAccessAldeia($familia['id_aldeia'])) {
+            return $this->redirectForbidden('Ita boot labele hamoos fixa familia husi aldeia seluk.');
+        }
+
+        $memberCount = $this->populasaunModel->where('id_familia', $id)->countAllResults();
+        if ($memberCount > 0) {
+            return redirect()->to('/admin/familia')->with('error', 'Fixa Familia nee iha membru. Hasai membru hotu uluk antes hamoos.');
+        }
 
         $this->familiaModel->delete($id);
 
@@ -329,5 +417,13 @@ class FamiliaController extends BaseController
             $exists = $db->table('tabela_familia')->where('numeru_kk', $num)->countAllResults();
         } while ($exists > 0);
         return $num;
+    }
+
+    private function familiaHasXefe(int $idFamilia): bool
+    {
+        return $this->populasaunModel
+            ->where('id_familia', $idFamilia)
+            ->where('relasaun_familia', 'Xefe Familia')
+            ->countAllResults() > 0;
     }
 }

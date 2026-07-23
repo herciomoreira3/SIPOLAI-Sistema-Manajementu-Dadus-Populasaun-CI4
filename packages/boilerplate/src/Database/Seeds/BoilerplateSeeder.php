@@ -36,20 +36,34 @@ class BoilerplateSeeder extends Seeder
 
     public function run()
     {
-        // User
-        $this->users->save(new User([
-            'email'    => 'admin@admin.com',
-            'username' => 'admin',
-            'password' => 'super-admin',
-            'active'   => '1',
-        ]));
+        $adminId = null;
+        $memberId = null;
+        $adminPassword = env('SIPOLAI_ADMIN_PASSWORD') ?: env('ADMIN_DEFAULT_PASSWORD');
+        $memberPassword = env('SIPOLAI_MEMBER_PASSWORD');
 
-        $this->users->save(new User([
-            'email'    => 'user@user.com',
-            'username' => 'user',
-            'password' => 'super-user',
-            'active'   => '1',
-        ]));
+        if (is_string($adminPassword) && trim($adminPassword) !== '') {
+            $this->users->save(new User([
+                'email'    => 'admin@admin.com',
+                'username' => 'admin',
+                'password' => $adminPassword,
+                'active'   => '1',
+            ]));
+            $admin = $this->users->where('email', 'admin@admin.com')->first();
+            $adminId = $admin->id ?? null;
+        } else {
+            log_message('warning', 'Skip default admin user seed: SIPOLAI_ADMIN_PASSWORD/ADMIN_DEFAULT_PASSWORD not configured.');
+        }
+
+        if (is_string($memberPassword) && trim($memberPassword) !== '') {
+            $this->users->save(new User([
+                'email'    => 'user@user.com',
+                'username' => 'user',
+                'password' => $memberPassword,
+                'active'   => '1',
+            ]));
+            $member = $this->users->where('email', 'user@user.com')->first();
+            $memberId = $member->id ?? null;
+        }
 
         // Role
         $this->authorize->createGroup('admin', 'Administrators. The top of the food chain.');
@@ -69,16 +83,24 @@ class BoilerplateSeeder extends Seeder
         $this->authorize->addPermissionToGroup('back-office', 'member');
 
         // Assign Role to user
-        $this->authorize->addUserToGroup(1, 'admin');
-        $this->authorize->addUserToGroup(1, 'member');
-        $this->authorize->addUserToGroup(2, 'member');
+        if ($adminId !== null) {
+            $this->authorize->addUserToGroup((int) $adminId, 'admin');
+            $this->authorize->addUserToGroup((int) $adminId, 'member');
+        }
+        if ($memberId !== null) {
+            $this->authorize->addUserToGroup((int) $memberId, 'member');
+        }
 
         // Assign Permission to user
-        $this->authorize->addPermissionToUser('back-office', 1);
-        $this->authorize->addPermissionToUser('manage-user', 1);
-        $this->authorize->addPermissionToUser('role-permission', 1);
-        $this->authorize->addPermissionToUser('menu-permission', 1);
-        $this->authorize->addPermissionToUser('back-office', 2);
+        if ($adminId !== null) {
+            $this->authorize->addPermissionToUser('back-office', (int) $adminId);
+            $this->authorize->addPermissionToUser('manage-user', (int) $adminId);
+            $this->authorize->addPermissionToUser('role-permission', (int) $adminId);
+            $this->authorize->addPermissionToUser('menu-permission', (int) $adminId);
+        }
+        if ($memberId !== null) {
+            $this->authorize->addPermissionToUser('back-office', (int) $memberId);
+        }
 
         $this->db->table('menu')->insertBatch([
             [

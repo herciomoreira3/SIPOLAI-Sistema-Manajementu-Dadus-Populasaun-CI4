@@ -216,8 +216,11 @@
                         actions += `<a href="<?= route_to('admin/pedidu') ?>/${data.id_pedidu}/edit" class="btn btn-sm btn-info rounded-circle mr-1 shadow-sm" title="Hadia"><i class="fas fa-edit"></i></a>`;
                     }
                     
-                    actions += `<button class="btn btn-sm btn-danger rounded-circle btn-delete shadow-sm" data-id="${data.id_pedidu}" title="Hamoos"><i class="fas fa-trash"></i></button>
-                            </div>`;
+                    if (isApprover) {
+                        actions += `<button class="btn btn-sm btn-danger rounded-circle btn-delete shadow-sm" data-id="${data.id_pedidu}" title="Hamoos"><i class="fas fa-trash"></i></button>`;
+                    }
+
+                    actions += `</div>`;
                     return actions;
                 }
             }

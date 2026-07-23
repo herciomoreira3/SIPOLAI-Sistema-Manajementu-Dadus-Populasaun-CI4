@@ -6,10 +6,10 @@ Sistem ne'e halo gestao ba dadus populasaun iha base iha CodeIgniter 4. Projetu 
 
 https://sipolai-sistema-manajementu-dadus.onrender.com/
 
-🔐 Kredensial demo (usu hela ba test):
+Akses admin lokal:
 
-- Username: `admin`
-- Password: `sipolai2026admin`
+- Password admin lokal agora tenki rai iha `.env` uza `SIPOLAI_ADMIN_PASSWORD=...` antes run migration reset admin.
+- Labele rai password demo/default iha repo. Troka password admin husi UI depois login primeira.
 
 ⚠️ Rekordu: Konto demo maka hatama ba test no demonstra. Hikas seguru troka pasword bainhira iha produsaun.
 

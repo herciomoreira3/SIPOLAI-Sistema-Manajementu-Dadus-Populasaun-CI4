@@ -30,10 +30,6 @@ class PopulasaunController extends BaseController
         $this->relijiaunModel = new RelijiaunModel();
         $this->literaturaModel = new LiteraturaModel();
         $this->familiaModel = new FamiliaModel();
-
-        // Auto-fix Mene to Mane for data consistency
-        $db = \Config\Database::connect();
-        $db->simpleQuery("UPDATE tabela_populasaun SET jeneru = 'Mane' WHERE jeneru = 'Mene'");
     }
 
     public function index()
@@ -202,7 +198,13 @@ class PopulasaunController extends BaseController
                 foreach ($data as &$row) {
                     $row['data_mate'] = '-';
                     $pedidu = $db->table('tabela_pedidu')
-                        ->where('pemohon', $row['naran_kompletu'])
+                        ->groupStart()
+                            ->where('id_populasaun', $row['id_populasaun'])
+                            ->orGroupStart()
+                                ->where('id_populasaun', null)
+                                ->where('pemohon', $row['naran_kompletu'])
+                            ->groupEnd()
+                        ->groupEnd()
                         ->where('naran_pedidu', 'Deklarasaun Mortalidade')
                         ->where('status', 'Aprovadu')
                         ->orderBy('id_pedidu', 'desc')
@@ -227,7 +229,13 @@ class PopulasaunController extends BaseController
                 foreach ($data as &$row) {
                     $row['data_muda'] = '-';
                     $pedidu = $db->table('tabela_pedidu')
-                        ->where('pemohon', $row['naran_kompletu'])
+                        ->groupStart()
+                            ->where('id_populasaun', $row['id_populasaun'])
+                            ->orGroupStart()
+                                ->where('id_populasaun', null)
+                                ->where('pemohon', $row['naran_kompletu'])
+                            ->groupEnd()
+                        ->groupEnd()
                         ->where('naran_pedidu', 'Deklarasaun Muda Domisiliu')
                         ->where('status', 'Aprovadu')
                         ->orderBy('id_pedidu', 'desc')
@@ -261,10 +269,20 @@ class PopulasaunController extends BaseController
             }
             
             // Calculate premium dashboard stats
-            $statNascimentu = $db->table('tabela_pedidu')->where('naran_pedidu', 'Deklarasaun Nascimentu')->where('status', 'Aprovadu')->countAllResults();
-            $statMoris = $db->table('tabela_populasaun')->where('istadu', 'Moris')->countAllResults();
-            $statMate = $db->table('tabela_populasaun')->where('istadu', 'Mate')->countAllResults();
-            $statMuda = $db->table('tabela_populasaun')->where('istadu', 'Muda')->countAllResults();
+            $statNascimentuQuery = $db->table('tabela_pedidu')->where('naran_pedidu', 'Deklarasaun Nascimentu')->where('status', 'Aprovadu');
+            $statMorisQuery = $db->table('tabela_populasaun')->where('istadu', 'Moris');
+            $statMateQuery = $db->table('tabela_populasaun')->where('istadu', 'Mate');
+            $statMudaQuery = $db->table('tabela_populasaun')->where('istadu', 'Muda');
+            if (in_groups('xefe-aldeia') && !empty(user()->id_aldeia)) {
+                $statNascimentuQuery->where('id_aldeia', user()->id_aldeia);
+                $statMorisQuery->where('id_aldeia', user()->id_aldeia);
+                $statMateQuery->where('id_aldeia', user()->id_aldeia);
+                $statMudaQuery->where('id_aldeia', user()->id_aldeia);
+            }
+            $statNascimentu = $statNascimentuQuery->countAllResults();
+            $statMoris = $statMorisQuery->countAllResults();
+            $statMate = $statMateQuery->countAllResults();
+            $statMuda = $statMudaQuery->countAllResults();
 
             return view('admin/populasaun/estatutu', [
                 'title'           => 'Jestaun Estatutu Populasaun',
@@ -306,7 +324,7 @@ class PopulasaunController extends BaseController
             'profisaun'  => $this->profisaunModel->findAll(),
             'relijiaun'  => $this->relijiaunModel->findAll(),
             'literatura' => $this->literaturaModel->findAll(),
-            'familias'   => $this->familiaModel->findAll(),
+            'familias'   => $this->familiasForCurrentUser(),
         ]);
     }
 
@@ -328,8 +346,18 @@ class PopulasaunController extends BaseController
             return redirect()->back()->withInput()->with('error', $this->validator->getErrors());
         }
 
+        $idAldeia = (int) $this->request->getPost('id_aldeia');
+        if (! $this->canAccessAldeia($idAldeia)) {
+            return $this->redirectForbidden('Ita boot labele aumenta populasaun ba aldeia seluk.');
+        }
+
         $jeneru = $this->request->getPost('jeneru');
         $relasaun_familia = $this->request->getPost('relasaun_familia');
+        $idFamilia = $this->request->getPost('id_familia') ?: null;
+
+        if (! $this->validateFamilyAssignment($idFamilia, $relasaun_familia, $jeneru, $idAldeia)) {
+            return redirect()->back()->withInput();
+        }
 
         if ($relasaun_familia === 'Xefe Familia' && $jeneru !== 'Mane') {
             return redirect()->back()->withInput()->with('error', 'Xefe Familia tenki Mane de\'it!');
@@ -344,12 +372,12 @@ class PopulasaunController extends BaseController
             'data_moris'       => $this->request->getPost('data_moris'),
             'jeneru'           => $this->request->getPost('jeneru'),
             'status_kaza'      => $this->request->getPost('status_kaza'),
-            'id_aldeia'        => $this->request->getPost('id_aldeia'),
+            'id_aldeia'        => $idAldeia,
             'id_profisaun'     => $this->request->getPost('id_profisaun'),
             'id_relijiaun'     => $this->request->getPost('id_relijiaun'),
             'id_literatura'    => $this->request->getPost('id_literatura'),
-            'id_familia'       => $this->request->getPost('id_familia') ?: null,
-            'relasaun_familia' => $this->request->getPost('relasaun_familia') ?: null,
+            'id_familia'       => $idFamilia,
+            'relasaun_familia' => $idFamilia ? ($relasaun_familia ?: null) : null,
             'istadu'           => 'Moris',
         ]);
 
@@ -361,6 +389,9 @@ class PopulasaunController extends BaseController
         $data = $this->populasaunModel->find($id);
         if (!$data) {
             return redirect()->to('/admin/populasaun')->with('sweet-error', 'Dados populasaun la hetan!');
+        }
+        if (! $this->canAccessAldeia($data['id_aldeia'])) {
+            return $this->redirectForbidden('Ita boot labele hadia populasaun husi aldeia seluk.');
         }
 
         $aldeias = $this->aldeiaModel->findAll();
@@ -376,12 +407,20 @@ class PopulasaunController extends BaseController
             'profisaun'  => $this->profisaunModel->findAll(),
             'relijiaun'  => $this->relijiaunModel->findAll(),
             'literatura' => $this->literaturaModel->findAll(),
-            'familias'   => $this->familiaModel->findAll(),
+            'familias'   => $this->familiasForCurrentUser(),
         ]);
     }
 
     public function update($id = null)
     {
+        $oldData = $this->populasaunModel->find($id);
+        if (!$oldData) {
+            return redirect()->to('/admin/populasaun')->with('sweet-error', 'Dados populasaun la hetan!');
+        }
+        if (! $this->canAccessAldeia($oldData['id_aldeia'])) {
+            return $this->redirectForbidden('Ita boot labele hadia populasaun husi aldeia seluk.');
+        }
+
         $rules = [
             'nik'            => "required|is_unique[tabela_populasaun.nik,id_populasaun,{$id}]",
             'naran_kompletu' => 'required|min_length[3]|max_length[150]',
@@ -400,11 +439,25 @@ class PopulasaunController extends BaseController
             return redirect()->back()->withInput()->with('error', $this->validator->getErrors());
         }
 
+        $idAldeia = (int) $this->request->getPost('id_aldeia');
+        if (! $this->canAccessAldeia($idAldeia)) {
+            return $this->redirectForbidden('Ita boot labele muda populasaun ba aldeia seluk.');
+        }
+
         $jeneru = $this->request->getPost('jeneru');
         $relasaun_familia = $this->request->getPost('relasaun_familia');
+        $idFamilia = $this->request->getPost('id_familia') ?: null;
+        $newStatus = $this->request->getPost('istadu');
+
+        if (! $this->validateFamilyAssignment($idFamilia, $relasaun_familia, $jeneru, $idAldeia, (int) $id)) {
+            return redirect()->back()->withInput();
+        }
 
         if ($relasaun_familia === 'Xefe Familia' && $jeneru !== 'Mane') {
             return redirect()->back()->withInput()->with('error', 'Xefe Familia tenki Mane de\'it!');
+        }
+        if ($oldData['istadu'] !== $newStatus && ! $this->hasAnyRole(['admin', 'xefe-suku', 'sekretaria'])) {
+            return $this->redirectForbidden('Ita boot la iha autorizasaun atu muda estatutu populasaun.');
         }
 
         $this->populasaunModel->update($id, [
@@ -414,14 +467,18 @@ class PopulasaunController extends BaseController
             'data_moris'       => $this->request->getPost('data_moris'),
             'jeneru'           => $this->request->getPost('jeneru'),
             'status_kaza'      => $this->request->getPost('status_kaza'),
-            'id_aldeia'        => $this->request->getPost('id_aldeia'),
+            'id_aldeia'        => $idAldeia,
             'id_profisaun'     => $this->request->getPost('id_profisaun'),
             'id_relijiaun'     => $this->request->getPost('id_relijiaun'),
             'id_literatura'    => $this->request->getPost('id_literatura'),
-            'id_familia'       => $this->request->getPost('id_familia') ?: null,
-            'relasaun_familia' => $this->request->getPost('relasaun_familia') ?: null,
-            'istadu'           => $this->request->getPost('istadu'),
+            'id_familia'       => $idFamilia,
+            'relasaun_familia' => $idFamilia ? ($relasaun_familia ?: null) : null,
+            'istadu'           => $newStatus,
         ]);
+
+        if ($oldData['istadu'] !== $newStatus) {
+            $this->writeStatusHistory((int) $id, $oldData['istadu'], $newStatus, null, 'Manual update populasaun');
+        }
 
         return redirect()->to('/admin/populasaun')->with('sweet-success', 'Dadus populasaun hadia ho susesu!');
     }
@@ -442,16 +499,31 @@ class PopulasaunController extends BaseController
         if (!$data) {
             return $this->failNotFound('Populasaun la hetan!');
         }
+        if (! $this->canAccessAldeia($data['id_aldeia'])) {
+            return $this->failForbidden('Ita boot labele muda estatutu populasaun husi aldeia seluk.');
+        }
+        if ($data['istadu'] === $istadu) {
+            return $this->respond(['status' => true, 'message' => "Estatutu populasaun nafatin {$istadu}."]);
+        }
 
         $this->populasaunModel->update($id, ['istadu' => $istadu]);
+        $this->writeStatusHistory((int) $id, $data['istadu'], $istadu, null, 'Manual status endpoint');
 
         return $this->respond(['status' => true, 'message' => "Estatutu populasaun mudadu ba {$istadu} ho susesu!"]);
     }
 
     public function delete($id = null)
     {
-        if (!$this->populasaunModel->find($id)) {
+        if (! in_groups(['admin', 'xefe-suku'])) {
+            return $this->failForbidden('Ita boot la iha kbiit/autorizasaun atu hamoos populasaun!');
+        }
+
+        $data = $this->populasaunModel->find($id);
+        if (!$data) {
             return $this->failNotFound('Populasaun la hetan!');
+        }
+        if (! $this->canAccessAldeia($data['id_aldeia'])) {
+            return $this->failForbidden('Ita boot labele hamoos populasaun husi aldeia seluk.');
         }
 
         $this->populasaunModel->delete($id);
@@ -468,5 +540,73 @@ class PopulasaunController extends BaseController
             $exists = $db->table('tabela_populasaun')->where('nik', $nip)->countAllResults();
         } while ($exists > 0);
         return $nip;
+    }
+
+    private function familiasForCurrentUser(): array
+    {
+        $familiaModel = new FamiliaModel();
+        if (in_groups('xefe-aldeia') && !empty(user()->id_aldeia)) {
+            return $familiaModel->where('id_aldeia', user()->id_aldeia)->findAll();
+        }
+
+        return $familiaModel->findAll();
+    }
+
+    private function validateFamilyAssignment($idFamilia, ?string $relasaun, string $jeneru, int $idAldeia, ?int $ignorePopulasaunId = null): bool
+    {
+        if (empty($idFamilia)) {
+            return true;
+        }
+
+        $familia = $this->familiaModel->find($idFamilia);
+        if (!$familia || (int) $familia['id_aldeia'] !== $idAldeia || ! $this->canAccessAldeia($familia['id_aldeia'])) {
+            session()->setFlashdata('error', 'Fixa Familia la validu ba aldeia nebe hili.');
+            return false;
+        }
+        if (empty($relasaun)) {
+            session()->setFlashdata('error', 'Relasaun Familia tenki hili se sidadaun tama iha fixa familia.');
+            return false;
+        }
+        if ($relasaun === 'Xefe Familia' && $jeneru !== 'Mane') {
+            session()->setFlashdata('error', 'Xefe Familia tenki Mane de\'it!');
+            return false;
+        }
+
+        $xefeQuery = $this->populasaunModel
+            ->where('id_familia', $idFamilia)
+            ->where('relasaun_familia', 'Xefe Familia');
+        if ($ignorePopulasaunId !== null) {
+            $xefeQuery->where('id_populasaun !=', $ignorePopulasaunId);
+        }
+        $hasXefe = $xefeQuery->countAllResults() > 0;
+
+        if ($relasaun === 'Xefe Familia' && $hasXefe) {
+            session()->setFlashdata('error', 'Fixa Familia nee iha ona Xefe Familia.');
+            return false;
+        }
+        if ($relasaun !== 'Xefe Familia' && ! $hasXefe) {
+            session()->setFlashdata('error', 'Tenki rejista Xefe Familia uluk antes aumenta membru seluk.');
+            return false;
+        }
+
+        return true;
+    }
+
+    private function writeStatusHistory(int $idPopulasaun, ?string $oldStatus, string $newStatus, ?int $idPedidu, string $reason): void
+    {
+        $db = \Config\Database::connect();
+        if (! $db->tableExists('tabela_populasaun_status_history')) {
+            return;
+        }
+
+        $db->table('tabela_populasaun_status_history')->insert([
+            'id_populasaun' => $idPopulasaun,
+            'old_istadu'    => $oldStatus,
+            'new_istadu'    => $newStatus,
+            'id_pedidu'     => $idPedidu,
+            'changed_by'    => $this->currentUserId(),
+            'reason'        => $reason,
+            'created_at'    => date('Y-m-d H:i:s'),
+        ]);
     }
 }
