@@ -157,12 +157,12 @@ class EstruturaSukuController extends BaseController
                     $paramsToSign = $params;
                     unset($paramsToSign['file']);
                     ksort($paramsToSign);
-                    $signature = '';
+                    $signatureParts = [];
                     foreach ($paramsToSign as $key => $value) {
-                        $signature .= $key . '=' . $value;
+                        $signatureParts[] = $key . '=' . $value;
                     }
-                    $signature .= $apiSecret;
-                    $params['signature'] = sha1($signature);
+                    $signatureString = implode('&', $signatureParts) . $apiSecret;
+                    $params['signature'] = sha1($signatureString);
 
                     // Upload to Cloudinary
                     $ch = curl_init();
@@ -243,12 +243,12 @@ class EstruturaSukuController extends BaseController
             ];
             // Generate signature
             ksort($params);
-            $signature = '';
+            $signatureParts = [];
             foreach ($params as $key => $value) {
-                $signature .= $key . '=' . $value;
+                $signatureParts[] = $key . '=' . $value;
             }
-            $signature .= $apiSecret;
-            $params['signature'] = sha1($signature);
+            $signatureString = implode('&', $signatureParts) . $apiSecret;
+            $params['signature'] = sha1($signatureString);
 
             $ch = curl_init();
             curl_setopt($ch, CURLOPT_URL, "https://api.cloudinary.com/v1_1/$cloudName/image/destroy");
