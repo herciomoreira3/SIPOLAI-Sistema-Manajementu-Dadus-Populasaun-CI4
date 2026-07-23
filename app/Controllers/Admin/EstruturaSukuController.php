@@ -125,43 +125,71 @@ class EstruturaSukuController extends BaseController
     {
         $img = $this->request->getFile('foto');
         if ($img && $img->isValid() && !$img->hasMoved()) {
-            // Check if Cloudinary is available and configured
-            $cloudinaryAvailable = class_exists('\Cloudinary') && class_exists('\Cloudinary\Uploader');
+            // Check if Cloudinary is configured
             $cloudinaryConfig = config('Cloudinary');
             $cloudinaryConfigured = !empty($cloudinaryConfig->cloudName) && !empty($cloudinaryConfig->apiKey) && !empty($cloudinaryConfig->apiSecret);
             
-            if ($cloudinaryAvailable && $cloudinaryConfigured) {
-                // Use Cloudinary
+            if ($cloudinaryConfigured) {
+                // Use Cloudinary REST API
                 try {
-                    // Configure Cloudinary
-                    \Cloudinary::config([
-                        'cloud_name' => $cloudinaryConfig->cloudName,
-                        'api_key' => $cloudinaryConfig->apiKey,
-                        'api_secret' => $cloudinaryConfig->apiSecret,
-                    ]);
+                    $cloudName = $cloudinaryConfig->cloudName;
+                    $apiKey = $cloudinaryConfig->apiKey;
+                    $apiSecret = $cloudinaryConfig->apiSecret;
 
-                    // Upload to Cloudinary with compression
-                    $uploadResult = \Cloudinary\Uploader::upload($img->getTempName(), [
+                    // First, compress the image locally using CodeIgniter's Image class
+                    $tempDir = sys_get_temp_dir();
+                    $tempName = uniqid('img_', true) . '.jpg';
+                    $tempPath = $tempDir . '/' . $tempName;
+                    $imageService = \Config\Services::image();
+                    $imageService->withFile($img)
+                        ->resize(800, 800, true, 'height')
+                        ->convert(IMAGETYPE_JPEG)
+                        ->save($tempPath, 75);
+
+                    // Prepare Cloudinary upload parameters
+                    $params = [
+                        'file' => new \CURLFile($tempPath),
                         'folder' => 'sipolai/struktur',
-                        'transformation' => [
-                            'width' => 800,
-                            'height' => 800,
-                            'crop' => 'limit',
-                            'quality' => 'auto:good',
-                            'format' => 'jpg',
-                        ],
-                    ]);
-
-                    // Delete old photo from Cloudinary if exists
-                    if (!empty($oldFoto) && strpos($oldFoto, 'cloudinary.com') !== false) {
-                        // Extract public ID from Cloudinary URL
-                        $publicId = $this->getCloudinaryPublicId($oldFoto);
-                        if ($publicId) {
-                            \Cloudinary\Uploader::destroy($publicId);
-                        }
+                        'api_key' => $apiKey,
+                        'timestamp' => time(),
+                    ];
+                    // Generate signature
+                    $paramsToSign = $params;
+                    unset($paramsToSign['file']);
+                    ksort($paramsToSign);
+                    $signature = '';
+                    foreach ($paramsToSign as $key => $value) {
+                        $signature .= $key . '=' . $value;
                     }
+                    $signature .= $apiSecret;
+                    $params['signature'] = sha1($signature);
 
-                    return $uploadResult['secure_url'];
+                    // Upload to Cloudinary
+                    $ch = curl_init();
+                    curl_setopt($ch, CURLOPT_URL, "https://api.cloudinary.com/v1_1/$cloudName/image/upload");
+                    curl_setopt($ch, CURLOPT_POST, true);
+                    curl_setopt($ch, CURLOPT_POSTFIELDS, $params);
+                    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
+                    $response = curl_exec($ch);
+                    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+                    curl_close($ch);
+
+                    // Delete temporary file
+                    @unlink($tempPath);
+
+                    if ($httpCode === 200) {
+                        $uploadResult = json_decode($response, true);
+                        if (isset($uploadResult['secure_url'])) {
+                            // Delete old photo from Cloudinary if exists
+                            if (!empty($oldFoto) && strpos($oldFoto, 'cloudinary.com') !== false) {
+                                $this->deleteCloudinaryPhoto($oldFoto, $apiKey, $apiSecret, $cloudName);
+                            }
+                            return $uploadResult['secure_url'];
+                        }
+                    } else {
+                        log_message('error', 'Cloudinary upload failed with code ' . $httpCode . ': ' . $response);
+                    }
                 } catch (\Exception $e) {
                     log_message('error', 'Cloudinary upload failed: ' . $e->getMessage());
                     // Fallback to local storage
@@ -186,12 +214,11 @@ class EstruturaSukuController extends BaseController
             $imageService = \Config\Services::image();
             try {
                 $imageService->withFile($img)
-                    ->resize(800, 800, true, 'height') // Resize to max 800px height/width, maintain aspect ratio
-                    ->convert(IMAGETYPE_JPEG) // Convert to JPEG for smaller size
-                    ->save($uploadDir . $newName, 75); // 75% quality
+                    ->resize(800, 800, true, 'height')
+                    ->convert(IMAGETYPE_JPEG)
+                    ->save($uploadDir . $newName, 75);
             } catch (\Exception $e) {
                 log_message('error', 'Image compression failed: ' . $e->getMessage());
-                // Fallback to original upload if compression fails
                 $img->move($uploadDir, $newName);
             }
 
@@ -201,14 +228,46 @@ class EstruturaSukuController extends BaseController
         return $oldFoto;
     }
 
+    private function deleteCloudinaryPhoto($url, $apiKey, $apiSecret, $cloudName)
+    {
+        try {
+            $publicId = $this->getCloudinaryPublicId($url);
+            if (!$publicId) {
+                return;
+            }
+
+            $params = [
+                'public_id' => $publicId,
+                'api_key' => $apiKey,
+                'timestamp' => time(),
+            ];
+            // Generate signature
+            ksort($params);
+            $signature = '';
+            foreach ($params as $key => $value) {
+                $signature .= $key . '=' . $value;
+            }
+            $signature .= $apiSecret;
+            $params['signature'] = sha1($signature);
+
+            $ch = curl_init();
+            curl_setopt($ch, CURLOPT_URL, "https://api.cloudinary.com/v1_1/$cloudName/image/destroy");
+            curl_setopt($ch, CURLOPT_POST, true);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, $params);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
+            curl_exec($ch);
+            curl_close($ch);
+        } catch (\Exception $e) {
+            log_message('error', 'Cloudinary delete failed: ' . $e->getMessage());
+        }
+    }
+
     private function getCloudinaryPublicId($url)
     {
-        // Extract public ID from Cloudinary URL
-        // Example URL: https://res.cloudinary.com/cloud-name/image/upload/v1234567890/folder/public-id.jpg
         $pathParts = explode('/', parse_url($url, PHP_URL_PATH));
         $fileName = end($pathParts);
         $publicId = pathinfo($fileName, PATHINFO_FILENAME);
-        // Check if there's a folder
         $folderIndex = array_search('upload', $pathParts);
         if ($folderIndex !== false && isset($pathParts[$folderIndex + 2])) {
             $folder = implode('/', array_slice($pathParts, $folderIndex + 2, -1));
