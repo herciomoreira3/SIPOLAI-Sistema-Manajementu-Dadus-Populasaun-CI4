@@ -32,8 +32,15 @@ class KbiitLaekController extends BaseController
                 $db = \Config\Database::connect();
 
                 $baseBuilder = function () use ($db, $id_aldeia) {
+                    // Dual-condition match: prefer id_populasaun link (set by migration/app),
+                    // fall back to pemohon=naran_kompletu for rows the backfill could not link
+                    // (e.g. ambiguous names). Both conditions are scoped to the same aldeia
+                    // to avoid cross-aldeia false matches.
                     $latestApprovedPedidu = '(SELECT MAX(tp.id_pedidu) FROM tabela_pedidu tp'
-                        . ' WHERE tp.id_populasaun = tabela_populasaun.id_populasaun'
+                        . ' WHERE (tp.id_populasaun = tabela_populasaun.id_populasaun'
+                        . '        OR (tp.id_populasaun IS NULL'
+                        . '            AND tp.pemohon = tabela_populasaun.naran_kompletu'
+                        . '            AND tp.id_aldeia = tabela_populasaun.id_aldeia))'
                         . " AND tp.naran_pedidu = " . $db->escape('Deklarasaun Kbiit Laek')
                         . " AND tp.status = 'Aprovadu')";
 
