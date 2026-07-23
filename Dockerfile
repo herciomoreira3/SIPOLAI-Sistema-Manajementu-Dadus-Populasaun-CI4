@@ -7,6 +7,8 @@ RUN apt-get update && apt-get install -y \
     libjpeg-dev \
     libfreetype6-dev \
     libzip-dev \
+    libcurl4-openssl-dev \
+    pkg-config \
     zip \
     unzip \
     git \
@@ -22,8 +24,7 @@ RUN docker-php-ext-install \
     pdo_mysql \
     gd \
     zip \
-    opcache \
-    curl
+    opcache
 
 # Enable Apache mod_rewrite
 RUN a2enmod rewrite
