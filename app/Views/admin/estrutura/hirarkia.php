@@ -271,6 +271,7 @@
                                         <div class="avatar-placeholder <?= ($xefeSuku['jeneru'] ?? 'Mane') == 'Feto' ? 'avatar-feto' : 'avatar-mane' ?>">
                                             <i class="fas <?= ($xefeSuku['jeneru'] ?? 'Mane') == 'Feto' ? 'fa-female' : 'fa-user-tie' ?>"></i>
                                         </div>
+                                    <?php endif; ?>
                                 </div>
                                 <span class="kargu-badge">Xefe Suku</span>
                                 <div class="membru-name" title="<?= esc($xefeSuku['naran_membru']) ?>"><?= esc($xefeSuku['naran_membru']) ?></div>
@@ -309,9 +310,9 @@
                                     <div class="membru-card card-tier-2" style="border-top-color: #10b981;">
                                         <div class="avatar-wrapper" style="border-color: #10b981;">
                                             <?php $photoUrl = get_photo_url($membru['foto'], 'familia'); ?>
-                                        <?php if ($photoUrl) : ?>
-                                            <img src="<?= esc($photoUrl) ?>" alt="Foto">
-                                        <?php else : ?>
+                                            <?php if ($photoUrl) : ?>
+                                                <img src="<?= esc($photoUrl) ?>" alt="Foto">
+                                            <?php else : ?>
                                                 <div class="avatar-placeholder <?= ($membru['jeneru'] ?? 'Mane') == 'Feto' ? 'avatar-feto' : 'avatar-mane' ?>">
                                                     <i class="fas <?= ($membru['jeneru'] ?? 'Mane') == 'Feto' ? 'fa-female' : 'fa-user' ?>"></i>
                                                 </div>
@@ -417,13 +418,13 @@
                                         <div class="membru-card card-tier-3">
                                             <div class="avatar-wrapper" style="border-color: #f97316;">
                                                 <?php $photoUrl = get_photo_url($xefe['foto'], 'familia'); ?>
-                                            <?php if ($photoUrl) : ?>
-                                                <img src="<?= esc($photoUrl) ?>" alt="Foto">
-                                            <?php else : ?>
-                                                <div class="avatar-placeholder <?= ($xefe['jeneru'] ?? 'Mane') == 'Feto' ? 'avatar-feto' : 'avatar-mane' ?>">
-                                                    <i class="fas <?= ($xefe['jeneru'] ?? 'Mane') == 'Feto' ? 'fa-female' : 'fa-user' ?>"></i>
-                                                </div>
-                                            <?php endif; ?>
+                                                <?php if ($photoUrl) : ?>
+                                                    <img src="<?= esc($photoUrl) ?>" alt="Foto">
+                                                <?php else : ?>
+                                                    <div class="avatar-placeholder <?= ($xefe['jeneru'] ?? 'Mane') == 'Feto' ? 'avatar-feto' : 'avatar-mane' ?>">
+                                                        <i class="fas <?= ($xefe['jeneru'] ?? 'Mane') == 'Feto' ? 'fa-female' : 'fa-user' ?>"></i>
+                                                    </div>
+                                                <?php endif; ?>
                                             </div>
                                             <span class="kargu-badge" title="<?= esc($xefe['kargu']) ?>"><?= esc($xefe['kargu']) ?></span>
                                             <div class="membru-name" title="<?= esc($xefe['naran_membru']) ?>"><?= esc($xefe['naran_membru']) ?></div>
