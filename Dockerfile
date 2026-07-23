@@ -22,7 +22,8 @@ RUN docker-php-ext-install \
     pdo_mysql \
     gd \
     zip \
-    opcache
+    opcache \
+    curl
 
 # Enable Apache mod_rewrite
 RUN a2enmod rewrite
