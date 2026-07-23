@@ -48,6 +48,11 @@ RUN composer install --no-dev --optimize-autoloader
 RUN chown -R www-data:www-data /var/www/html/writable \
     && chmod -R 775 /var/www/html/writable
 
+# Create and set permissions for upload directory
+RUN mkdir -p /var/www/html/public/uploads/familia \
+    && chown -R www-data:www-data /var/www/html/public/uploads \
+    && chmod -R 775 /var/www/html/public/uploads
+
 # Make entrypoint.sh executable
 RUN chmod +x entrypoint.sh
 
