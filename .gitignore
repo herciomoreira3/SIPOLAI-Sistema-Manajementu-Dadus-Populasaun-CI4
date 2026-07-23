@@ -125,3 +125,5 @@ _modules/*
 
 /results/
 /phpunit*.xml
+render-cli/
+render-cli.zip
