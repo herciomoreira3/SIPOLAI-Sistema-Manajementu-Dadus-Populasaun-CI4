@@ -368,14 +368,26 @@ class FamiliaController extends BaseController
                 @unlink(ROOTPATH . 'public/uploads/familia/' . $familia['foto']);
             }
 
-            // Generate a random name and move the file
+            // Generate a random name
             $newName = $img->getRandomName();
             // Ensure directory exists
             $uploadDir = ROOTPATH . 'public/uploads/familia/';
             if (!is_dir($uploadDir)) {
                 mkdir($uploadDir, 0777, true);
             }
-            $img->move($uploadDir, $newName);
+
+            // Use CodeIgniter's Image class to compress the image
+            $imageService = \Config\Services::image();
+            try {
+                $imageService->withFile($img)
+                    ->resize(800, 800, true, 'height') // Resize to max 800px height/width, maintain aspect ratio
+                    ->convert(IMAGETYPE_JPEG) // Convert to JPEG for smaller size
+                    ->save($uploadDir . $newName, 75); // 75% quality
+            } catch (\Exception $e) {
+                log_message('error', 'Image compression failed: ' . $e->getMessage());
+                // Fallback to original upload if compression fails
+                $img->move($uploadDir, $newName);
+            }
 
             // Update in DB
             $this->familiaModel->update($id, [

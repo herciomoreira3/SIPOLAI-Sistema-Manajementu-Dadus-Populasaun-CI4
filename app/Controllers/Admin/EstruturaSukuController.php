@@ -76,7 +76,7 @@ class EstruturaSukuController extends BaseController
             'naran_membru'   => 'required|min_length[3]|max_length[150]',
             'kargu'          => 'required',
             'periodo_hahula' => 'required|valid_date',
-            'foto'           => 'is_image[foto]|mime_in[foto,image/jpg,image/jpeg,image/png,image/webp]|max_size[foto,2048]',
+            'foto'           => 'permit_empty|is_image[foto]|mime_in[foto,image/jpg,image/jpeg,image/png,image/webp]|max_size[foto,2048]',
         ];
 
         if (!$this->validate($rules)) {
@@ -125,24 +125,93 @@ class EstruturaSukuController extends BaseController
     {
         $img = $this->request->getFile('foto');
         if ($img && $img->isValid() && !$img->hasMoved()) {
+            // Check if Cloudinary is configured
+            $cloudinaryConfig = config('Cloudinary');
+            if (!empty($cloudinaryConfig->cloudName) && !empty($cloudinaryConfig->apiKey) && !empty($cloudinaryConfig->apiSecret)) {
+                // Use Cloudinary
+                try {
+                    // Configure Cloudinary
+                    \Cloudinary::config([
+                        'cloud_name' => $cloudinaryConfig->cloudName,
+                        'api_key' => $cloudinaryConfig->apiKey,
+                        'api_secret' => $cloudinaryConfig->apiSecret,
+                    ]);
+
+                    // Upload to Cloudinary with compression
+                    $uploadResult = \Cloudinary\Uploader::upload($img->getTempName(), [
+                        'folder' => 'sipolai/struktur',
+                        'transformation' => [
+                            'width' => 800,
+                            'height' => 800,
+                            'crop' => 'limit',
+                            'quality' => 'auto:good',
+                            'format' => 'jpg',
+                        ],
+                    ]);
+
+                    // Delete old photo from Cloudinary if exists
+                    if (!empty($oldFoto) && strpos($oldFoto, 'cloudinary.com') !== false) {
+                        // Extract public ID from Cloudinary URL
+                        $publicId = $this->getCloudinaryPublicId($oldFoto);
+                        if ($publicId) {
+                            \Cloudinary\Uploader::destroy($publicId);
+                        }
+                    }
+
+                    return $uploadResult['secure_url'];
+                } catch (\Exception $e) {
+                    log_message('error', 'Cloudinary upload failed: ' . $e->getMessage());
+                    // Fallback to local storage
+                }
+            }
+
+            // Fallback to local storage
             // Delete old photo if exists
             if (!empty($oldFoto) && file_exists(ROOTPATH . 'public/uploads/familia/' . $oldFoto)) {
                 @unlink(ROOTPATH . 'public/uploads/familia/' . $oldFoto);
             }
 
-            // Generate a random name and move the file
+            // Generate a random name
             $newName = $img->getRandomName();
             // Ensure directory exists
             $uploadDir = ROOTPATH . 'public/uploads/familia/';
             if (!is_dir($uploadDir)) {
                 mkdir($uploadDir, 0777, true);
             }
-            $img->move($uploadDir, $newName);
+
+            // Use CodeIgniter's Image class to compress the image
+            $imageService = \Config\Services::image();
+            try {
+                $imageService->withFile($img)
+                    ->resize(800, 800, true, 'height') // Resize to max 800px height/width, maintain aspect ratio
+                    ->convert(IMAGETYPE_JPEG) // Convert to JPEG for smaller size
+                    ->save($uploadDir . $newName, 75); // 75% quality
+            } catch (\Exception $e) {
+                log_message('error', 'Image compression failed: ' . $e->getMessage());
+                // Fallback to original upload if compression fails
+                $img->move($uploadDir, $newName);
+            }
 
             return $newName;
         }
 
         return $oldFoto;
+    }
+
+    private function getCloudinaryPublicId($url)
+    {
+        // Extract public ID from Cloudinary URL
+        // Example URL: https://res.cloudinary.com/cloud-name/image/upload/v1234567890/folder/public-id.jpg
+        $pathParts = explode('/', parse_url($url, PHP_URL_PATH));
+        $fileName = end($pathParts);
+        $publicId = pathinfo($fileName, PATHINFO_FILENAME);
+        // Check if there's a folder
+        $folderIndex = array_search('upload', $pathParts);
+        if ($folderIndex !== false && isset($pathParts[$folderIndex + 2])) {
+            $folder = implode('/', array_slice($pathParts, $folderIndex + 2, -1));
+            $publicId = $folder . '/' . $publicId;
+        }
+        return $publicId;
     }
 
     public function edit($id = null)
@@ -207,7 +276,7 @@ class EstruturaSukuController extends BaseController
             'naran_membru'   => 'required|min_length[3]|max_length[150]',
             'kargu'          => 'required',
             'periodo_hahula' => 'required|valid_date',
-            'foto'           => 'is_image[foto]|mime_in[foto,image/jpg,image/jpeg,image/png,image/webp]|max_size[foto,2048]',
+            'foto'           => 'permit_empty|is_image[foto]|mime_in[foto,image/jpg,image/jpeg,image/png,image/webp]|max_size[foto,2048]',
         ];
 
         if (!$this->validate($rules)) {
