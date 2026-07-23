@@ -24,24 +24,63 @@ class KbiitLaekController extends BaseController
     {
         $db = \Config\Database::connect();
 
+        // 1. Fetch approved Deklarasaun Kbiit Laek pedidu by id_populasaun
+        $pediduByPop = $db->table('tabela_pedidu')
+            ->select('id_populasaun, MAX(data_pedidu) as data_aprovada')
+            ->where('naran_pedidu', 'Deklarasaun Kbiit Laek')
+            ->where('status', 'Aprovadu')
+            ->where('id_populasaun IS NOT NULL')
+            ->groupBy('id_populasaun')
+            ->get()->getResultArray();
+
+        $approvedPopMap = [];
+        foreach ($pediduByPop as $row) {
+            $approvedPopMap[(int)$row['id_populasaun']] = $row['data_aprovada'];
+        }
+
+        // 2. Fetch approved Deklarasaun Kbiit Laek pedidu by pemohon + id_aldeia (fallback for legacy seeder data)
+        $pediduByName = $db->table('tabela_pedidu')
+            ->select('pemohon, id_aldeia, MAX(data_pedidu) as data_aprovada')
+            ->where('naran_pedidu', 'Deklarasaun Kbiit Laek')
+            ->where('status', 'Aprovadu')
+            ->where('id_populasaun IS NULL')
+            ->where('pemohon IS NOT NULL')
+            ->groupBy('pemohon, id_aldeia')
+            ->get()->getResultArray();
+
+        $approvedNameMap = [];
+        foreach ($pediduByName as $row) {
+            $key = mb_strtolower(trim($row['pemohon'])) . '_' . (int)$row['id_aldeia'];
+            $approvedNameMap[$key] = $row['data_aprovada'];
+        }
+
+        // 3. Simple query for population with standard LEFT JOIN on tabela_aldeia
         $builder = $db->table('tabela_populasaun p')
-            ->select('p.id_populasaun, p.nik, p.naran_kompletu, p.jeneru, p.no_kbiit_laek, p.istadu, p.id_aldeia, a.naran_aldeia, tp.data_pedidu as data_aprovada')
+            ->select('p.id_populasaun, p.nik, p.naran_kompletu, p.jeneru, p.no_kbiit_laek, p.istadu, p.id_aldeia, a.naran_aldeia')
             ->join('tabela_aldeia a', 'a.id_aldeia = p.id_aldeia', 'left')
-            ->join('tabela_pedidu tp', '(tp.id_populasaun = p.id_populasaun OR (tp.id_populasaun IS NULL AND tp.pemohon = p.naran_kompletu AND tp.id_aldeia = p.id_aldeia)) AND tp.naran_pedidu = \'Deklarasaun Kbiit Laek\' AND tp.status = \'Aprovadu\'', 'left', false)
             ->where('p.istadu', 'Moris')
-            ->groupStart()
-                ->where('tp.id_pedidu IS NOT NULL')
-                ->orWhere('p.no_kbiit_laek IS NOT NULL')
-                ->orWhere("p.no_kbiit_laek != ''")
-            ->groupEnd()
-            ->groupBy('p.id_populasaun')
             ->orderBy('p.naran_kompletu', 'ASC');
 
         if (in_groups('xefe-aldeia') && !empty(user()->id_aldeia)) {
             $builder->where('p.id_aldeia', user()->id_aldeia);
         }
 
-        $kbiitLaeks = $builder->get()->getResultArray();
+        $allPop = $builder->get()->getResultArray();
+
+        // 4. Combine in PHP (100% compatible with TiDB and all DB engines)
+        $kbiitLaeks = [];
+        foreach ($allPop as $p) {
+            $id  = (int) $p['id_populasaun'];
+            $key = mb_strtolower(trim($p['naran_kompletu'])) . '_' . (int) $p['id_aldeia'];
+
+            $hasCard   = !empty($p['no_kbiit_laek']);
+            $hasPedidu = isset($approvedPopMap[$id]) || isset($approvedNameMap[$key]);
+
+            if ($hasCard || $hasPedidu) {
+                $p['data_aprovada'] = $approvedPopMap[$id] ?? ($approvedNameMap[$key] ?? null);
+                $kbiitLaeks[] = $p;
+            }
+        }
 
         $aldeias = $this->aldeiaModel->findAll();
         if (in_groups('xefe-aldeia') && !empty(user()->id_aldeia)) {
