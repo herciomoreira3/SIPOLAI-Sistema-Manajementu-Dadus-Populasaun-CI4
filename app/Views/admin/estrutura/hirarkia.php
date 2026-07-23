@@ -264,13 +264,13 @@
                         <?php if ($xefeSuku) : ?>
                             <div class="membru-card card-tier-1">
                                 <div class="avatar-wrapper" style="border-color: #3b82f6;">
-                                    <?php if (!empty($xefeSuku['foto']) && file_exists(FCPATH . 'uploads/familia/' . $xefeSuku['foto'])) : ?>
-                                        <img src="<?= base_url('uploads/familia/' . $xefeSuku['foto']) ?>" alt="Foto">
+                                    <?php $photoUrl = get_photo_url($xefeSuku['foto'], 'familia'); ?>
+                                    <?php if ($photoUrl) : ?>
+                                        <img src="<?= esc($photoUrl) ?>" alt="Foto">
                                     <?php else : ?>
                                         <div class="avatar-placeholder <?= ($xefeSuku['jeneru'] ?? 'Mane') == 'Feto' ? 'avatar-feto' : 'avatar-mane' ?>">
                                             <i class="fas <?= ($xefeSuku['jeneru'] ?? 'Mane') == 'Feto' ? 'fa-female' : 'fa-user-tie' ?>"></i>
                                         </div>
-                                    <?php endif; ?>
                                 </div>
                                 <span class="kargu-badge">Xefe Suku</span>
                                 <div class="membru-name" title="<?= esc($xefeSuku['naran_membru']) ?>"><?= esc($xefeSuku['naran_membru']) ?></div>
@@ -308,9 +308,10 @@
                                     <div class="org-line-v" style="height: 15px;"></div>
                                     <div class="membru-card card-tier-2" style="border-top-color: #10b981;">
                                         <div class="avatar-wrapper" style="border-color: #10b981;">
-                                            <?php if (!empty($membru['foto']) && file_exists(FCPATH . 'uploads/familia/' . $membru['foto'])) : ?>
-                                                <img src="<?= base_url('uploads/familia/' . $membru['foto']) ?>" alt="Foto">
-                                            <?php else : ?>
+                                            <?php $photoUrl = get_photo_url($membru['foto'], 'familia'); ?>
+                                        <?php if ($photoUrl) : ?>
+                                            <img src="<?= esc($photoUrl) ?>" alt="Foto">
+                                        <?php else : ?>
                                                 <div class="avatar-placeholder <?= ($membru['jeneru'] ?? 'Mane') == 'Feto' ? 'avatar-feto' : 'avatar-mane' ?>">
                                                     <i class="fas <?= ($membru['jeneru'] ?? 'Mane') == 'Feto' ? 'fa-female' : 'fa-user' ?>"></i>
                                                 </div>
@@ -330,8 +331,9 @@
                                 <?php if ($secretariaSuku) : ?>
                                     <div class="membru-card card-tier-2" style="border-top-color: #3b82f6; width: 145px;">
                                         <div class="avatar-wrapper" style="border-color: #3b82f6;">
-                                            <?php if (!empty($secretariaSuku['foto']) && file_exists(FCPATH . 'uploads/familia/' . $secretariaSuku['foto'])) : ?>
-                                                <img src="<?= base_url('uploads/familia/' . $secretariaSuku['foto']) ?>" alt="Foto">
+                                            <?php $photoUrl = get_photo_url($secretariaSuku['foto'], 'familia'); ?>
+                                            <?php if ($photoUrl) : ?>
+                                                <img src="<?= esc($photoUrl) ?>" alt="Foto">
                                             <?php else : ?>
                                                 <div class="avatar-placeholder <?= ($secretariaSuku['jeneru'] ?? 'Mane') == 'Feto' ? 'avatar-feto' : 'avatar-mane' ?>">
                                                     <i class="fas <?= ($secretariaSuku['jeneru'] ?? 'Mane') == 'Feto' ? 'fa-female' : 'fa-user-cog' ?>"></i>
@@ -369,8 +371,9 @@
                                                 <div class="org-line-v" style="height: 12px; background: #cbd5e1;"></div>
                                                 <div class="membru-card card-tier-4" style="border-top: 3px solid #8b5cf6; width: 110px; padding: 6px;">
                                                     <div class="avatar-wrapper" style="width: 44px; height: 44px;">
-                                                        <?php if (!empty($sub['foto']) && file_exists(FCPATH . 'uploads/familia/' . $sub['foto'])) : ?>
-                                                            <img src="<?= base_url('uploads/familia/' . $sub['foto']) ?>" alt="Foto">
+                                                        <?php $photoUrl = get_photo_url($sub['foto'], 'familia'); ?>
+                                                        <?php if ($photoUrl) : ?>
+                                                            <img src="<?= esc($photoUrl) ?>" alt="Foto">
                                                         <?php else : ?>
                                                             <div class="avatar-placeholder <?= ($sub['jeneru'] ?? 'Mane') == 'Feto' ? 'avatar-feto' : 'avatar-mane' ?>" style="font-size: 16px;">
                                                                 <i class="fas <?= ($sub['jeneru'] ?? 'Mane') == 'Feto' ? 'fa-female' : 'fa-user' ?>"></i>
@@ -413,13 +416,14 @@
                                     <?php if ($xefe) : ?>
                                         <div class="membru-card card-tier-3">
                                             <div class="avatar-wrapper" style="border-color: #f97316;">
-                                                <?php if (!empty($xefe['foto']) && file_exists(FCPATH . 'uploads/familia/' . $xefe['foto'])) : ?>
-                                                    <img src="<?= base_url('uploads/familia/' . $xefe['foto']) ?>" alt="Foto">
-                                                <?php else : ?>
-                                                    <div class="avatar-placeholder <?= ($xefe['jeneru'] ?? 'Mane') == 'Feto' ? 'avatar-feto' : 'avatar-mane' ?>">
-                                                        <i class="fas <?= ($xefe['jeneru'] ?? 'Mane') == 'Feto' ? 'fa-female' : 'fa-user' ?>"></i>
-                                                    </div>
-                                                <?php endif; ?>
+                                                <?php $photoUrl = get_photo_url($xefe['foto'], 'familia'); ?>
+                                            <?php if ($photoUrl) : ?>
+                                                <img src="<?= esc($photoUrl) ?>" alt="Foto">
+                                            <?php else : ?>
+                                                <div class="avatar-placeholder <?= ($xefe['jeneru'] ?? 'Mane') == 'Feto' ? 'avatar-feto' : 'avatar-mane' ?>">
+                                                    <i class="fas <?= ($xefe['jeneru'] ?? 'Mane') == 'Feto' ? 'fa-female' : 'fa-user' ?>"></i>
+                                                </div>
+                                            <?php endif; ?>
                                             </div>
                                             <span class="kargu-badge" title="<?= esc($xefe['kargu']) ?>"><?= esc($xefe['kargu']) ?></span>
                                             <div class="membru-name" title="<?= esc($xefe['naran_membru']) ?>"><?= esc($xefe['naran_membru']) ?></div>
@@ -443,8 +447,9 @@
                                         <?php foreach ($membros as $del) : ?>
                                             <div class="membru-card card-tier-4">
                                                 <div class="avatar-wrapper">
-                                                    <?php if (!empty($del['foto']) && file_exists(FCPATH . 'uploads/familia/' . $del['foto'])) : ?>
-                                                        <img src="<?= base_url('uploads/familia/' . $del['foto']) ?>" alt="Foto">
+                                                    <?php $photoUrl = get_photo_url($del['foto'], 'familia'); ?>
+                                                    <?php if ($photoUrl) : ?>
+                                                        <img src="<?= esc($photoUrl) ?>" alt="Foto">
                                                     <?php else : ?>
                                                         <div class="avatar-placeholder <?= ($del['jeneru'] ?? 'Mane') == 'Feto' ? 'avatar-feto' : 'avatar-mane' ?>">
                                                             <i class="fas <?= ($del['jeneru'] ?? 'Mane') == 'Feto' ? 'fa-female' : 'fa-user' ?>"></i>
