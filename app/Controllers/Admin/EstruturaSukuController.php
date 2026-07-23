@@ -125,9 +125,12 @@ class EstruturaSukuController extends BaseController
     {
         $img = $this->request->getFile('foto');
         if ($img && $img->isValid() && !$img->hasMoved()) {
-            // Check if Cloudinary is configured
+            // Check if Cloudinary is available and configured
+            $cloudinaryAvailable = class_exists('\Cloudinary') && class_exists('\Cloudinary\Uploader');
             $cloudinaryConfig = config('Cloudinary');
-            if (!empty($cloudinaryConfig->cloudName) && !empty($cloudinaryConfig->apiKey) && !empty($cloudinaryConfig->apiSecret)) {
+            $cloudinaryConfigured = !empty($cloudinaryConfig->cloudName) && !empty($cloudinaryConfig->apiKey) && !empty($cloudinaryConfig->apiSecret);
+            
+            if ($cloudinaryAvailable && $cloudinaryConfigured) {
                 // Use Cloudinary
                 try {
                     // Configure Cloudinary
