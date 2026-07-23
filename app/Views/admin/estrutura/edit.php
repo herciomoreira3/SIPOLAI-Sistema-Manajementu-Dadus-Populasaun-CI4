@@ -16,7 +16,7 @@
             <div class="card-header bg-transparent border-0 pt-4 px-4">
                 <h3 class="card-title font-weight-bold text-secondary"><i class="fas fa-edit mr-2"></i> Edit Dadus Membru Struktura</h3>
             </div>
-            <form action="<?= base_url('admin/estrutura/' . $membru['id_estrutura']) ?>" method="POST" class="px-4 pb-4 pt-2">
+            <form action="<?= base_url('admin/estrutura/' . $membru['id_estrutura']) ?>" method="POST" class="px-4 pb-4 pt-2" enctype="multipart/form-data">
                 <?= csrf_field() ?>
                 <input type="hidden" name="_method" value="PUT">
 
@@ -88,6 +88,18 @@
                         <option value="Ativu" <?= (old('status_kargu') ?? $membru['status_kargu']) == 'Ativu' ? 'selected' : '' ?>>Ativu</option>
                         <option value="Inativu" <?= (old('status_kargu') ?? $membru['status_kargu']) == 'Inativu' ? 'selected' : '' ?>>Inativu</option>
                     </select>
+                </div>
+
+                <?php if (!empty($membru['foto']) && file_exists(FCPATH . 'uploads/familia/' . $membru['foto'])) : ?>
+                    <div class="form-group">
+                        <label class="font-weight-bold text-muted">Foto Saat Ini</label><br>
+                        <img src="<?= base_url('uploads/familia/' . $membru['foto']) ?>" alt="Foto Membru" style="width: 150px; height: 150px; object-fit: cover; border-radius: 8px;">
+                    </div>
+                <?php endif; ?>
+
+                <div class="form-group">
+                    <label for="foto" class="font-weight-bold text-muted">Foto (Opsional)</label>
+                    <input type="file" name="foto" id="foto" class="form-control" accept="image/*">
                 </div>
 
                 <div class="d-flex justify-content-between mt-4">

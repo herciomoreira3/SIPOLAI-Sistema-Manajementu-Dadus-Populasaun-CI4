@@ -17,7 +17,8 @@ class EstruturaSukuModel extends Model
         'kargu',
         'periodo_hahula',
         'periodo_remata',
-        'status_kargu'
+        'status_kargu',
+        'foto'
     ];
 
     protected $useTimestamps = true;

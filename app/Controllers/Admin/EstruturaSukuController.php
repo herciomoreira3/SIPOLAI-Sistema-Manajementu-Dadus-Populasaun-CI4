@@ -76,6 +76,7 @@ class EstruturaSukuController extends BaseController
             'naran_membru'   => 'required|min_length[3]|max_length[150]',
             'kargu'          => 'required',
             'periodo_hahula' => 'required|valid_date',
+            'foto'           => 'is_image[foto]|mime_in[foto,image/jpg,image/jpeg,image/png,image/webp]|max_size[foto,2048]',
         ];
 
         if (!$this->validate($rules)) {
@@ -104,6 +105,8 @@ class EstruturaSukuController extends BaseController
             }
         }
 
+        $fotoName = $this->handlePhotoUpload();
+
         $this->estruturaModel->save([
             'id_populasaun'  => !empty($idPopulasaun) ? $idPopulasaun : null,
             'id_aldeia'      => !empty($idAldeia) ? $idAldeia : null,
@@ -112,9 +115,34 @@ class EstruturaSukuController extends BaseController
             'periodo_hahula' => $this->request->getPost('periodo_hahula'),
             'periodo_remata' => !empty($this->request->getPost('periodo_remata')) ? $this->request->getPost('periodo_remata') : null,
             'status_kargu'   => $this->request->getPost('status_kargu') ?? 'Ativu',
+            'foto'           => $fotoName,
         ]);
 
         return redirect()->to('admin/estrutura')->with('message', 'Membru rejistadu ho susesu!');
+    }
+
+    private function handlePhotoUpload($oldFoto = null)
+    {
+        $img = $this->request->getFile('foto');
+        if ($img && $img->isValid() && !$img->hasMoved()) {
+            // Delete old photo if exists
+            if (!empty($oldFoto) && file_exists(ROOTPATH . 'public/uploads/familia/' . $oldFoto)) {
+                @unlink(ROOTPATH . 'public/uploads/familia/' . $oldFoto);
+            }
+
+            // Generate a random name and move the file
+            $newName = $img->getRandomName();
+            // Ensure directory exists
+            $uploadDir = ROOTPATH . 'public/uploads/familia/';
+            if (!is_dir($uploadDir)) {
+                mkdir($uploadDir, 0777, true);
+            }
+            $img->move($uploadDir, $newName);
+
+            return $newName;
+        }
+
+        return $oldFoto;
     }
 
     public function edit($id = null)
@@ -179,6 +207,7 @@ class EstruturaSukuController extends BaseController
             'naran_membru'   => 'required|min_length[3]|max_length[150]',
             'kargu'          => 'required',
             'periodo_hahula' => 'required|valid_date',
+            'foto'           => 'is_image[foto]|mime_in[foto,image/jpg,image/jpeg,image/png,image/webp]|max_size[foto,2048]',
         ];
 
         if (!$this->validate($rules)) {
@@ -207,6 +236,9 @@ class EstruturaSukuController extends BaseController
             }
         }
 
+        $membru = $this->estruturaModel->find($id);
+        $fotoName = $this->handlePhotoUpload($membru['foto']);
+
         $this->estruturaModel->update($id, [
             'id_populasaun'  => !empty($idPopulasaun) ? $idPopulasaun : null,
             'id_aldeia'      => !empty($idAldeia) ? $idAldeia : null,
@@ -215,6 +247,7 @@ class EstruturaSukuController extends BaseController
             'periodo_hahula' => $this->request->getPost('periodo_hahula'),
             'periodo_remata' => !empty($this->request->getPost('periodo_remata')) ? $this->request->getPost('periodo_remata') : null,
             'status_kargu'   => $this->request->getPost('status_kargu') ?? 'Ativu',
+            'foto'           => $fotoName,
         ]);
 
         return redirect()->to('admin/estrutura')->with('message', 'Dados membru aktualizadu ho susesu!');
@@ -309,9 +342,8 @@ class EstruturaSukuController extends BaseController
         
         // Fetch all active structure members
         $estrutura = $db->table('tabela_estrutura_suku')
-            ->select('tabela_estrutura_suku.*, tabela_populasaun.jeneru, tabela_familia.foto, tabela_aldeia.naran_aldeia')
+            ->select('tabela_estrutura_suku.*, tabela_populasaun.jeneru, tabela_aldeia.naran_aldeia')
             ->join('tabela_populasaun', 'tabela_populasaun.id_populasaun = tabela_estrutura_suku.id_populasaun', 'left')
-            ->join('tabela_familia', 'tabela_familia.id_familia = tabela_populasaun.id_familia', 'left')
             ->join('tabela_aldeia', 'tabela_aldeia.id_aldeia = tabela_estrutura_suku.id_aldeia', 'left')
             ->where('tabela_estrutura_suku.status_kargu', 'Ativu')
             ->get()

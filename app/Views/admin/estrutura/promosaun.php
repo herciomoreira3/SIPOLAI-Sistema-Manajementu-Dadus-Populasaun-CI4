@@ -92,7 +92,7 @@
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
-            <form action="<?= base_url('admin/estrutura') ?>" method="POST" class="px-4 pb-4 pt-2">
+            <form action="<?= base_url('admin/estrutura') ?>" method="POST" class="px-4 pb-4 pt-2" enctype="multipart/form-data">
                 <?= csrf_field() ?>
                 <input type="hidden" name="id_populasaun" id="modal-id-populasaun">
 
@@ -120,6 +120,11 @@
                         <?php endforeach; ?>
                     </select>
                     <small class="text-muted">Hili Aldeia se membru ne'e mak Xefe Aldeia ka reprezentante Aldeia ruma.</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="modal-foto" class="font-weight-bold text-muted">Foto (Opsional)</label>
+                    <input type="file" name="foto" id="modal-foto" class="form-control" accept="image/*">
                 </div>
 
                 <div class="form-group">
