@@ -276,6 +276,10 @@
 
         tableNascimentu.on('draw.dt', function () {
             var PageInfo = $('#table-populasaun-nascimentu').DataTable().page.info();
+            var json = tableNascimentu.ajax.json();
+            if (json && json.recordsTotal !== undefined) {
+                $('#pills-nascimentu-tab').find('.badge').text(json.recordsTotal);
+            }
             tableNascimentu.column(0, { page: 'current' }).nodes().each( function (cell, i) {
                 cell.innerHTML = i + 1 + PageInfo.start;
             });
@@ -353,6 +357,10 @@
 
         tableMoris.on('draw.dt', function () {
             var PageInfo = $('#table-populasaun-moris').DataTable().page.info();
+            var json = tableMoris.ajax.json();
+            if (json && json.recordsTotal !== undefined) {
+                $('#pills-moris-tab').find('.badge').text(json.recordsTotal);
+            }
             tableMoris.column(0, { page: 'current' }).nodes().each( function (cell, i) {
                 cell.innerHTML = i + 1 + PageInfo.start;
             });
@@ -439,6 +447,10 @@
 
         tableMate.on('draw.dt', function () {
             var PageInfo = $('#table-populasaun-mate').DataTable().page.info();
+            var json = tableMate.ajax.json();
+            if (json && json.recordsTotal !== undefined) {
+                $('#pills-mate-tab').find('.badge').text(json.recordsTotal);
+            }
             tableMate.column(0, { page: 'current' }).nodes().each( function (cell, i) {
                 cell.innerHTML = i + 1 + PageInfo.start;
             });
@@ -525,6 +537,10 @@
 
         tableMuda.on('draw.dt', function () {
             var PageInfo = $('#table-populasaun-muda').DataTable().page.info();
+            var json = tableMuda.ajax.json();
+            if (json && json.recordsTotal !== undefined) {
+                $('#pills-muda-tab').find('.badge').text(json.recordsTotal);
+            }
             tableMuda.column(0, { page: 'current' }).nodes().each( function (cell, i) {
                 cell.innerHTML = i + 1 + PageInfo.start;
             });
