@@ -460,6 +460,7 @@ class RealDataSeeder extends Seeder
             // 1. Deklarasaun Eleitoral (If they have a card, they must have requested it)
             if (!empty($p['no_eleitoral'])) {
                 $pediduBatch2[] = [
+                    'id_populasaun' => $p['id_populasaun'],
                     'naran_pedidu' => 'Deklarasaun Eleitoral', 
                     'pemohon'      => $p['naran_kompletu'],
                     'data_pedidu'  => sprintf('2025-%02d-%02d', mt_rand(1, 12), mt_rand(1, 28)),
@@ -472,6 +473,7 @@ class RealDataSeeder extends Seeder
                 // Random chance they lost their card
                 if (mt_rand(1, 100) <= 3) {
                     $pediduBatch2[] = [
+                        'id_populasaun' => $p['id_populasaun'],
                         'naran_pedidu' => 'Deklarasaun Eleitoral Lakon', 
                         'pemohon'      => $p['naran_kompletu'],
                         'data_pedidu'  => sprintf('2026-%02d-%02d', mt_rand(1, 5), mt_rand(1, 28)),
@@ -486,6 +488,7 @@ class RealDataSeeder extends Seeder
             // 2. Deklarasaun Kbiit Laek (For poor families, requested by Xefe Familia)
             if (!empty($p['no_kbiit_laek']) && $p['relasaun_familia'] === 'Xefe Familia') {
                 $pediduBatch2[] = [
+                    'id_populasaun' => $p['id_populasaun'],
                     'naran_pedidu' => 'Deklarasaun Kbiit Laek', 
                     'pemohon'      => $p['naran_kompletu'],
                     'data_pedidu'  => sprintf('2026-%02d-%02d', mt_rand(1, 5), mt_rand(1, 28)),

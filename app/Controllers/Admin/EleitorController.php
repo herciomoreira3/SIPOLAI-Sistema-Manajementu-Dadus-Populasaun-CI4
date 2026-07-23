@@ -23,64 +23,75 @@ class EleitorController extends BaseController
     public function index()
     {
         if ($this->request->isAJAX()) {
-            $start = $this->request->getGet('start');
-            $length = $this->request->getGet('length');
-            $search = $this->request->getGet('search[value]');
-            $id_aldeia = $this->request->getGet('id_aldeia');
-            
-            $db = \Config\Database::connect();
-            
-            $baseBuilder = function() use ($db, $id_aldeia) {
-                $latestApprovedPedidu = "(SELECT MAX(tp.id_pedidu) FROM tabela_pedidu tp WHERE tp.id_populasaun = tabela_populasaun.id_populasaun AND tp.naran_pedidu = " . $db->escape('Deklarasaun Eleitoral') . " AND tp.status = 'Aprovadu')";
-                $builder = $db->table('tabela_populasaun')
-                    ->join('tabela_pedidu', "tabela_pedidu.id_pedidu = {$latestApprovedPedidu}", 'inner', false)
-                    ->where('tabela_populasaun.istadu', 'Moris');
+            try {
+                $start     = (int) ($this->request->getGet('start') ?? 0);
+                $length    = (int) ($this->request->getGet('length') ?? 10);
+                $search    = $this->request->getGet('search[value]') ?? '';
+                $id_aldeia = $this->request->getGet('id_aldeia');
 
-                if (in_groups('xefe-aldeia') && !empty(user()->id_aldeia)) {
-                    $builder->where('tabela_populasaun.id_aldeia', user()->id_aldeia);
+                $db = \Config\Database::connect();
+
+                $baseBuilder = function () use ($db, $id_aldeia) {
+                    $latestApprovedPedidu = '(SELECT MAX(tp.id_pedidu) FROM tabela_pedidu tp'
+                        . ' WHERE tp.id_populasaun = tabela_populasaun.id_populasaun'
+                        . " AND tp.naran_pedidu = " . $db->escape('Deklarasaun Eleitoral')
+                        . " AND tp.status = 'Aprovadu')";
+
+                    $builder = $db->table('tabela_populasaun')
+                        ->join('tabela_pedidu', "tabela_pedidu.id_pedidu = {$latestApprovedPedidu}", 'inner', false)
+                        ->where('tabela_populasaun.istadu', 'Moris');
+
+                    if (function_exists('in_groups') && in_groups('xefe-aldeia') && !empty(user()->id_aldeia)) {
+                        $builder->where('tabela_populasaun.id_aldeia', user()->id_aldeia);
+                    }
+                    if (!empty($id_aldeia)) {
+                        $builder->where('tabela_populasaun.id_aldeia', $id_aldeia);
+                    }
+                    return $builder;
+                };
+
+                // 1. recordsTotal
+                $recordsTotal = $baseBuilder()->countAllResults();
+
+                // 2. recordsFiltered (with search)
+                $filterBuilder = $baseBuilder();
+                $filterBuilder->join('tabela_aldeia', 'tabela_aldeia.id_aldeia = tabela_populasaun.id_aldeia', 'left');
+                if (!empty($search)) {
+                    $filterBuilder->groupStart()
+                        ->like('tabela_populasaun.naran_kompletu', $search)
+                        ->orLike('tabela_populasaun.nik', $search)
+                        ->orLike('tabela_populasaun.no_eleitoral', $search)
+                        ->orLike('tabela_aldeia.naran_aldeia', $search)
+                        ->groupEnd();
                 }
-                if (!empty($id_aldeia)) {
-                    $builder->where('tabela_populasaun.id_aldeia', $id_aldeia);
+                $recordsFiltered = $filterBuilder->countAllResults();
+
+                // 3. fetch data
+                $dataBuilder = $baseBuilder();
+                $dataBuilder
+                    ->select('tabela_populasaun.id_populasaun, tabela_populasaun.nik, tabela_populasaun.naran_kompletu, tabela_populasaun.jeneru, tabela_populasaun.no_eleitoral, tabela_populasaun.istadu, tabela_aldeia.naran_aldeia, tabela_pedidu.data_pedidu as data_aprovada, tabela_pedidu.id_pedidu')
+                    ->join('tabela_aldeia', 'tabela_aldeia.id_aldeia = tabela_populasaun.id_aldeia', 'left');
+                if (!empty($search)) {
+                    $dataBuilder->groupStart()
+                        ->like('tabela_populasaun.naran_kompletu', $search)
+                        ->orLike('tabela_populasaun.nik', $search)
+                        ->orLike('tabela_populasaun.no_eleitoral', $search)
+                        ->orLike('tabela_aldeia.naran_aldeia', $search)
+                        ->groupEnd();
                 }
-                return $builder;
-            };
+                $data = $dataBuilder->limit($length, $start)->get()->getResultArray();
 
-            // 1. recordsTotal
-            $recordsTotal = $baseBuilder()->countAllResults();
-            
-            // 2. recordsFiltered (with search)
-            $filterBuilder = $baseBuilder();
-            $filterBuilder->join('tabela_aldeia', 'tabela_aldeia.id_aldeia = tabela_populasaun.id_aldeia', 'left');
-            if (!empty($search)) {
-                $filterBuilder->groupStart()
-                    ->like('tabela_populasaun.naran_kompletu', $search)
-                    ->orLike('tabela_populasaun.nik', $search)
-                    ->orLike('tabela_populasaun.no_eleitoral', $search)
-                    ->orLike('tabela_aldeia.naran_aldeia', $search)
-                    ->groupEnd();
-            }
-            $recordsFiltered = $filterBuilder->countAllResults();
-            
-            // 3. fetch data
-            $dataBuilder = $baseBuilder();
-            $dataBuilder->select('tabela_populasaun.*, tabela_aldeia.naran_aldeia, tabela_pedidu.data_pedidu as data_aprovada, tabela_pedidu.id_pedidu')
-                ->join('tabela_aldeia', 'tabela_aldeia.id_aldeia = tabela_populasaun.id_aldeia', 'left');
-            if (!empty($search)) {
-                $dataBuilder->groupStart()
-                    ->like('tabela_populasaun.naran_kompletu', $search)
-                    ->orLike('tabela_populasaun.nik', $search)
-                    ->orLike('tabela_populasaun.no_eleitoral', $search)
-                    ->orLike('tabela_aldeia.naran_aldeia', $search)
-                    ->groupEnd();
-            }
-            $data = $dataBuilder->limit($length, $start)->get()->getResultArray();
+                return $this->respond([
+                    'draw'            => $this->request->getGet('draw'),
+                    'recordsTotal'    => $recordsTotal,
+                    'recordsFiltered' => $recordsFiltered,
+                    'data'            => $data,
+                ]);
 
-            return $this->respond([
-                'draw'            => $this->request->getGet('draw'),
-                'recordsTotal'    => $recordsTotal,
-                'recordsFiltered' => $recordsFiltered,
-                'data'            => $data,
-            ]);
+            } catch (\Throwable $e) {
+                log_message('error', '[EleitorController::index] ' . $e->getMessage() . ' | ' . $e->getFile() . ':' . $e->getLine());
+                return $this->failServerError('Erro internu: ' . $e->getMessage());
+            }
         }
 
         $aldeias = $this->aldeiaModel->findAll();
