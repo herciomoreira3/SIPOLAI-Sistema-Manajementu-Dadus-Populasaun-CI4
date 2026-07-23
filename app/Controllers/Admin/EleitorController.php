@@ -22,7 +22,9 @@ class EleitorController extends BaseController
 
     public function index()
     {
-        if ($this->request->isAJAX()) {
+        // Use 'draw' param (always sent by DataTables server-side) instead of isAJAX()
+        // because Render.com's reverse proxy strips X-Requested-With header.
+        if ($this->request->getGet('draw') !== null) {
             try {
                 $start     = (int) ($this->request->getGet('start') ?? 0);
                 $length    = (int) ($this->request->getGet('length') ?? 10);
