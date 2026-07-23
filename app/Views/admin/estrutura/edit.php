@@ -90,10 +90,11 @@
                     </select>
                 </div>
 
-                <?php if (!empty($membru['foto']) && file_exists(FCPATH . 'uploads/familia/' . $membru['foto'])) : ?>
+                <?php $photoUrl = get_photo_url($membru['foto'], 'familia'); ?>
+                <?php if ($photoUrl) : ?>
                     <div class="form-group">
                         <label class="font-weight-bold text-muted">Foto Saat Ini</label><br>
-                        <img src="<?= base_url('uploads/familia/' . $membru['foto']) ?>" alt="Foto Membru" style="width: 150px; height: 150px; object-fit: cover; border-radius: 8px;">
+                        <img src="<?= esc($photoUrl) ?>" alt="Foto Membru" style="width: 150px; height: 150px; object-fit: cover; border-radius: 8px;">
                     </div>
                 <?php endif; ?>
 
