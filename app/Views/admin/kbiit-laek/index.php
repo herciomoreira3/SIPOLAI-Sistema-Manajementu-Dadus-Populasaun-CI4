@@ -81,7 +81,7 @@
                         <select id="filter-aldeia" class="form-control select2 shadow-sm" style="border-radius: 8px;">
                             <option value="">-- Haree Aldeia Hotu --</option>
                             <?php foreach ($aldeias as $aldeia) : ?>
-                                <option value="<?= $aldeia['id_aldeia'] ?>"><?= esc($aldeia['naran_aldeia']) ?></option>
+                                <option value="<?= esc($aldeia['naran_aldeia']) ?>"><?= esc($aldeia['naran_aldeia']) ?></option>
                             <?php endforeach; ?>
                         </select>
                     </div>
@@ -104,6 +104,38 @@
                             </tr>
                         </thead>
                         <tbody>
+                            <?php $no = 1; foreach ($kbiitLaeks as $item) : ?>
+                                <tr>
+                                    <td><?= $no++ ?></td>
+                                    <td><span class="font-weight-bold text-primary"><?= esc($item['nik']) ?></span></td>
+                                    <td><span class="font-weight-bold text-secondary"><?= esc($item['naran_kompletu']) ?></span></td>
+                                    <td>
+                                        <span class="badge <?= $item['jeneru'] === 'Mane' ? 'badge-primary' : 'badge-danger' ?> badge-premium"><?= esc($item['jeneru']) ?></span>
+                                    </td>
+                                    <td><span class="badge badge-light badge-premium border"><?= esc($item['naran_aldeia'] ?? '-') ?></span></td>
+                                    <td><?= !empty($item['data_aprovada']) ? date('d/m/Y', strtotime($item['data_aprovada'])) : '-' ?></td>
+                                    <td>
+                                        <?php if (!empty($item['no_kbiit_laek'])) : ?>
+                                            <span class="badge badge-success badge-premium"><i class="fas fa-check-circle mr-1"></i> <?= esc($item['no_kbiit_laek']) ?></span>
+                                        <?php else : ?>
+                                            <span class="badge badge-warning badge-premium text-dark"><i class="fas fa-exclamation-triangle mr-1"></i> Seidauk Rejista Kartaun</span>
+                                        <?php endif; ?>
+                                    </td>
+                                    <?php if (!in_groups('xefe-aldeia')) : ?>
+                                        <td class="text-center">
+                                            <div class="d-flex justify-content-center">
+                                                <button class="btn btn-sm <?= !empty($item['no_kbiit_laek']) ? 'btn-info' : 'btn-primary' ?> btn-rounded btn-edit-kbiit shadow-sm" 
+                                                        data-id="<?= $item['id_populasaun'] ?>" 
+                                                        data-naran="<?= esc($item['naran_kompletu']) ?>" 
+                                                        data-kbiit="<?= esc($item['no_kbiit_laek'] ?? '') ?>" 
+                                                        title="<?= !empty($item['no_kbiit_laek']) ? 'Hadia Dadus' : 'Preenxe Kartaun' ?> Kbiit Laek">
+                                                    <i class="<?= !empty($item['no_kbiit_laek']) ? 'fas fa-edit' : 'fas fa-plus' ?> mr-1"></i> <?= !empty($item['no_kbiit_laek']) ? 'Hadia Dadus' : 'Preenxe Kartaun' ?>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    <?php endif; ?>
+                                </tr>
+                            <?php endforeach; ?>
                         </tbody>
                     </table>
                 </div>
@@ -156,84 +188,12 @@
 <script>
     $(document).ready(function() {
         var tableKbiitLaek = $('#table-kbiit-laek').DataTable({
-            processing: true,
-            serverSide: true,
             autoWidth: false,
             order: [[2, 'asc']],
-            ajax : {
-                url: '<?= route_to('kbiit-laek-index') ?>',
-                method: 'GET',
-                data: function(d) {
-                    d.id_aldeia = $('#filter-aldeia').val();
-                }
-            },
             columnDefs: [{
                 orderable: false,
                 targets: <?= !in_groups('xefe-aldeia') ? '[0, 7]' : '[0]' ?>
             }],
-            columns : [
-                { 'data': null },
-                { 
-                    'data': 'nik',
-                    'render': function(data) {
-                        return `<span class="font-weight-bold text-primary">${data}</span>`;
-                    }
-                },
-                { 
-                    'data': 'naran_kompletu',
-                    'render': function(data) {
-                        return `<span class="font-weight-bold text-secondary">${data}</span>`;
-                    }
-                },
-                { 
-                    'data': 'jeneru',
-                    'render': function(data) {
-                        let badgeClass = data === 'Mane' ? 'badge-primary' : 'badge-danger';
-                        return `<span class="badge ${badgeClass} badge-premium">${data}</span>`;
-                    }
-                },
-                { 
-                    'data': 'naran_aldeia',
-                    'render': function(data) {
-                        return `<span class="badge badge-light badge-premium border">${data}</span>`;
-                    }
-                },
-                { 
-                    'data': 'data_aprovada',
-                    'render': function(data) {
-                        if (!data) return '-';
-                        var d = new Date(data);
-                        return d.toLocaleDateString('pt-PT');
-                    }
-                },
-                { 
-                    'data': 'no_kbiit_laek',
-                    'render': function(data) {
-                        if (data) {
-                            return `<span class="badge badge-success badge-premium"><i class="fas fa-check-circle mr-1"></i> ${data}</span>`;
-                        }
-                        return `<span class="badge badge-warning badge-premium text-dark"><i class="fas fa-exclamation-triangle mr-1"></i> Seidauk Rejista Kartaun</span>`;
-                    }
-                }
-                <?php if (!in_groups('xefe-aldeia')) : ?>,
-                {
-                    "data": function(data) {
-                        let btnClass = data.no_kbiit_laek ? 'btn-info' : 'btn-primary';
-                        let btnText = data.no_kbiit_laek ? 'Hadia Dadus' : 'Preenxe Kartaun';
-                        let btnIcon = data.no_kbiit_laek ? 'fas fa-edit' : 'fas fa-plus';
-                        return `<div class="d-flex justify-content-center">
-                                    <button class="btn btn-sm ${btnClass} btn-rounded btn-edit-kbiit shadow-sm" 
-                                            data-id="${data.id_populasaun}" 
-                                            data-naran="${data.naran_kompletu}" 
-                                            data-kbiit="${data.no_kbiit_laek || ''}" 
-                                            title="${btnText} Kbiit Laek">
-                                        <i class="${btnIcon} mr-1"></i> ${btnText}
-                                    </button>
-                                </div>`;
-                    }
-                }
-                <?php endif; ?>
-            ],
             "language": {
                 "url": "https://cdn.datatables.net/plug-ins/1.10.20/i18n/Indonesian.json"
             }
@@ -246,9 +206,14 @@
             });
         });
 
-        // Filter reload on change
+        // Filter by Aldeia column (column index 4)
         $('#filter-aldeia').on('change', function() {
-            tableKbiitLaek.ajax.reload();
+            var val = $(this).val();
+            if (!val) {
+                tableKbiitLaek.column(4).search('').draw();
+            } else {
+                tableKbiitLaek.column(4).search('^' + $.fn.dataTable.util.escapeRegex(val) + '$', true, false).draw();
+            }
         });
 
         // Open Modal to preenxe kartaun
@@ -283,7 +248,9 @@
                     icon: 'success',
                     title: data.message
                 });
-                tableKbiitLaek.ajax.reload();
+                setTimeout(function() {
+                    location.reload();
+                }, 800);
             }).fail((xhr) => {
                 var errorMsg = xhr.responseJSON ? xhr.responseJSON.message : "Falla atualiza dadus kbiit laek!";
                 Toast.fire({

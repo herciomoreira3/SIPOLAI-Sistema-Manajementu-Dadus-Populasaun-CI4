@@ -22,161 +22,26 @@ class EleitorController extends BaseController
 
     public function index()
     {
-        // DataTables server-side always sends 'draw' param.
-        // We use this instead of isAJAX() because reverse proxies (Render.com)
-        // strip the X-Requested-With header, making isAJAX() always return false.
-        if ($this->request->getGet('draw') !== null) {
-            try {
-                $db     = \Config\Database::connect();
-                $start  = (int) ($this->request->getGet('start') ?? 0);
-                $length = (int) ($this->request->getGet('length') ?? 10);
-                $search = trim((string) ($this->request->getGet('search[value]') ?? ''));
-                $filterAldeia = (int) ($this->request->getGet('id_aldeia') ?? 0);
+        $db = \Config\Database::connect();
 
-                // ----------------------------------------------------------------
-                // Build optional WHERE fragments (safe, parameterised via escape)
-                // ----------------------------------------------------------------
-                $extraWhere = '';
+        $builder = $db->table('tabela_populasaun p')
+            ->select('p.id_populasaun, p.nik, p.naran_kompletu, p.jeneru, p.no_eleitoral, p.istadu, p.id_aldeia, a.naran_aldeia, tp.data_pedidu as data_aprovada')
+            ->join('tabela_aldeia a', 'a.id_aldeia = p.id_aldeia', 'left')
+            ->join('tabela_pedidu tp', '(tp.id_populasaun = p.id_populasaun OR (tp.id_populasaun IS NULL AND tp.pemohon = p.naran_kompletu AND tp.id_aldeia = p.id_aldeia)) AND tp.naran_pedidu = \'Deklarasaun Eleitoral\' AND tp.status = \'Aprovadu\'', 'left', false)
+            ->where('p.istadu', 'Moris')
+            ->groupStart()
+                ->where('tp.id_pedidu IS NOT NULL')
+                ->orWhere('p.no_eleitoral IS NOT NULL')
+                ->orWhere("p.no_eleitoral != ''")
+            ->groupEnd()
+            ->groupBy('p.id_populasaun')
+            ->orderBy('p.naran_kompletu', 'ASC');
 
-                // Role-based aldeia restriction
-                if (function_exists('in_groups') && in_groups('xefe-aldeia') && !empty(user()->id_aldeia)) {
-                    $extraWhere .= ' AND p.id_aldeia = ' . (int) user()->id_aldeia;
-                }
-
-                // Filter by selected aldeia
-                if ($filterAldeia > 0) {
-                    $extraWhere .= ' AND p.id_aldeia = ' . $filterAldeia;
-                }
-
-                // Search
-                $searchWhere = '';
-                if ($search !== '') {
-                    $s = $db->escapeString($search);
-                    $searchWhere = " AND (p.naran_kompletu LIKE '%{$s}%'
-                                      OR p.nik             LIKE '%{$s}%'
-                                      OR p.no_eleitoral    LIKE '%{$s}%'
-                                      OR a.naran_aldeia    LIKE '%{$s}%')";
-                }
-
-                // ----------------------------------------------------------------
-                // Step 1 — collect id_populasaun that have an approved declaration.
-                //   Primary: linked via tabela_pedidu.id_populasaun
-                //   Fallback: linked via pemohon + id_aldeia (for rows inserted
-                //             by seeder before the id_populasaun column existed)
-                // ----------------------------------------------------------------
-                $idRows = $db->query("
-                    SELECT DISTINCT
-                        COALESCE(tp.id_populasaun, p2.id_populasaun) AS id_pop
-                    FROM tabela_pedidu tp
-                    LEFT JOIN tabela_populasaun p2
-                        ON tp.id_populasaun IS NULL
-                        AND tp.pemohon    = p2.naran_kompletu
-                        AND tp.id_aldeia  = p2.id_aldeia
-                    WHERE tp.naran_pedidu = 'Deklarasaun Eleitoral'
-                      AND tp.status       = 'Aprovadu'
-                      AND COALESCE(tp.id_populasaun, p2.id_populasaun) IS NOT NULL
-                ")->getResultArray();
-
-                $approvedIds = array_column($idRows, 'id_pop');
-
-                // No approved declarations at all → return empty DataTables response
-                if (empty($approvedIds)) {
-                    return $this->response->setJSON([
-                        'draw'            => (int) $this->request->getGet('draw'),
-                        'recordsTotal'    => 0,
-                        'recordsFiltered' => 0,
-                        'data'            => [],
-                    ]);
-                }
-
-                $inList = implode(',', array_map('intval', $approvedIds));
-
-                // ----------------------------------------------------------------
-                // Step 2 — total count (all matching, before search filter)
-                // ----------------------------------------------------------------
-                $totalRow = $db->query("
-                    SELECT COUNT(*) AS cnt
-                    FROM tabela_populasaun p
-                    LEFT JOIN tabela_aldeia a ON a.id_aldeia = p.id_aldeia
-                    WHERE p.istadu        = 'Moris'
-                      AND p.id_populasaun IN ({$inList})
-                    {$extraWhere}
-                ")->getRowArray();
-                $recordsTotal = (int) ($totalRow['cnt'] ?? 0);
-
-                // ----------------------------------------------------------------
-                // Step 3 — filtered count (with search)
-                // ----------------------------------------------------------------
-                $filteredRow = $db->query("
-                    SELECT COUNT(*) AS cnt
-                    FROM tabela_populasaun p
-                    LEFT JOIN tabela_aldeia a ON a.id_aldeia = p.id_aldeia
-                    WHERE p.istadu        = 'Moris'
-                      AND p.id_populasaun IN ({$inList})
-                    {$extraWhere}
-                    {$searchWhere}
-                ")->getRowArray();
-                $recordsFiltered = (int) ($filteredRow['cnt'] ?? 0);
-
-                // ----------------------------------------------------------------
-                // Step 4 — fetch page data with latest approved pedidu details
-                // ----------------------------------------------------------------
-                $data = $db->query("
-                    SELECT
-                        p.id_populasaun,
-                        p.nik,
-                        p.naran_kompletu,
-                        p.jeneru,
-                        p.no_eleitoral,
-                        p.istadu,
-                        a.naran_aldeia,
-                        tp.data_pedidu  AS data_aprovada,
-                        tp.id_pedidu
-                    FROM tabela_populasaun p
-                    LEFT JOIN tabela_aldeia a ON a.id_aldeia = p.id_aldeia
-                    LEFT JOIN tabela_pedidu tp ON tp.id_pedidu = (
-                        SELECT MAX(tp2.id_pedidu)
-                        FROM tabela_pedidu tp2
-                        WHERE tp2.naran_pedidu = 'Deklarasaun Eleitoral'
-                          AND tp2.status       = 'Aprovadu'
-                          AND (
-                              tp2.id_populasaun = p.id_populasaun
-                              OR (
-                                  tp2.id_populasaun IS NULL
-                                  AND tp2.pemohon   = p.naran_kompletu
-                                  AND tp2.id_aldeia = p.id_aldeia
-                              )
-                          )
-                    )
-                    WHERE p.istadu        = 'Moris'
-                      AND p.id_populasaun IN ({$inList})
-                    {$extraWhere}
-                    {$searchWhere}
-                    ORDER BY p.naran_kompletu ASC
-                    LIMIT {$length} OFFSET {$start}
-                ")->getResultArray();
-
-                return $this->response->setJSON([
-                    'draw'            => (int) $this->request->getGet('draw'),
-                    'recordsTotal'    => $recordsTotal,
-                    'recordsFiltered' => $recordsFiltered,
-                    'data'            => $data,
-                ]);
-
-            } catch (\Throwable $e) {
-                log_message('error', '[EleitorController::index] ' . $e->getMessage()
-                    . ' | ' . $e->getFile() . ':' . $e->getLine());
-                // Return valid DataTables error payload (HTTP 200) so we can
-                // surface the real message in the browser console instead of TN/7.
-                return $this->response->setStatusCode(200)->setJSON([
-                    'draw'            => (int) ($this->request->getGet('draw') ?? 1),
-                    'recordsTotal'    => 0,
-                    'recordsFiltered' => 0,
-                    'data'            => [],
-                    'error'           => 'Erro internu: ' . $e->getMessage(),
-                ]);
-            }
+        if (in_groups('xefe-aldeia') && !empty(user()->id_aldeia)) {
+            $builder->where('p.id_aldeia', user()->id_aldeia);
         }
+
+        $eleitores = $builder->get()->getResultArray();
 
         $aldeias = $this->aldeiaModel->findAll();
         if (in_groups('xefe-aldeia') && !empty(user()->id_aldeia)) {
@@ -184,15 +49,15 @@ class EleitorController extends BaseController
         }
 
         return view('admin/eleitor/index', [
-            'title'    => 'Dados Eleitores',
-            'subtitle' => 'Dadus Populasaun ne\'ebé hetan ona Deklarasaun Eleitoral husi Suku no halo ona Kartaun Eleitoral',
-            'aldeias'  => $aldeias,
+            'title'     => 'Dados Eleitores',
+            'subtitle'  => 'Dadus Populasaun ne\'ebé hetan ona Deklarasaun Eleitoral husi Suku no halo ona Kartaun Eleitoral',
+            'aldeias'   => $aldeias,
+            'eleitores' => $eleitores,
         ]);
     }
 
     public function update($id = null)
     {
-        // Only Authorized Roles can update Voter Card Numbers
         if (!in_groups(['admin', 'xefe-suku', 'sekretaria'])) {
             return $this->failForbidden('Ita boot la iha kbiit/autorizasaun atu atualiza dadus eleitor!');
         }
@@ -203,16 +68,6 @@ class EleitorController extends BaseController
         }
         if (! $this->canAccessAldeia($populasaun['id_aldeia'])) {
             return $this->failForbidden('Ita boot labele atualiza eleitor husi aldeia seluk.');
-        }
-
-        $db = \Config\Database::connect();
-        $approvedPedidu = $db->table('tabela_pedidu')
-            ->where('id_populasaun', $id)
-            ->where('naran_pedidu', 'Deklarasaun Eleitoral')
-            ->where('status', 'Aprovadu')
-            ->countAllResults();
-        if ($approvedPedidu === 0) {
-            return $this->fail('Sidadaun nee seidauk iha Deklarasaun Eleitoral aprovadu.');
         }
 
         $noEleitoral = trim((string) $this->request->getPost('no_eleitoral'));
